@@ -16,8 +16,7 @@ import {
   RefreshCw,
   ArrowRight,
   Calendar,
-  MoreVertical,
-  Truck,
+  MoreVertical
 } from 'lucide-react';
 import { UserAvatar } from '@/components/UserAvatar';
 import {
