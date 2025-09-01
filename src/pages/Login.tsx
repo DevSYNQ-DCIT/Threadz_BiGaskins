@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +14,25 @@ const Login = () => {
     const { login, isLoading } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
+    const location = useLocation();
+
+    // Check for redirect state from signup
+    useEffect(() => {
+        if (location.state?.message) {
+            toast({
+                title: 'Account created!',
+                description: location.state.message,
+            });
+            
+            // Clear the state to prevent showing the message again on refresh
+            window.history.replaceState({}, document.title);
+            
+            // Pre-fill the email if provided
+            if (location.state.email) {
+                setEmail(location.state.email);
+            }
+        }
+    }, [location.state, toast]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();

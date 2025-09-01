@@ -6,131 +6,436 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, Mail, Lock, Eye, EyeOff, Check, X, ArrowRight } from 'lucide-react';
+
+type SignupStep = 'method' | 'email' | 'verification' | 'complete';
 
 const Signup = () => {
-    const [name, setName] = useState('');
+    const [step, setStep] = useState<SignupStep>('method');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
-    const { signup, isLoading } = useAuth();
+    const [name, setName] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    
+    const { 
+        signUp, 
+        signInWithGoogle, 
+        signInWithGitHub, 
+        resendVerification 
+    } = useAuth();
     const { toast } = useToast();
     const navigate = useNavigate();
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const handleEmailSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
-            toast({
-                title: "Passwords don't match",
-                description: "Please make sure both passwords are identical.",
-                variant: "destructive",
-            });
+        setError('');
+        
+        // Basic validation
+        if (!email || !password || !name) {
+            setError('All fields are required');
             return;
         }
-
+        
+        if (password.length < 6) {
+            setError('Password must be at least 6 characters');
+            return;
+        }
+        
+        setIsLoading(true);
         try {
-            await signup(name, email, password);
+            console.log('Attempting to sign up...');
+            const result = await signUp(email, password, name);
+            console.log('Signup result:', result);
+            
+            if (result && result.success) {
+                console.log('Signup successful, showing verification step');
+                setStep('verification');
+                toast({
+                    title: 'Verification email sent',
+                    description: 'Please check your email to verify your account.',
+                });
+                
+                // Auto-navigate to login after 5 seconds
+                setTimeout(() => {
+                    console.log('Navigating to login page...');
+                    navigate('/login', { 
+                        state: { 
+                            email,
+                            message: 'Account created successfully! Please verify your email to continue.'
+                        },
+                        replace: true
+                    });
+                }, 5000);
+            } else {
+                const errorMessage = result?.message || 'Failed to create account';
+                console.error('Signup failed:', errorMessage);
+                throw new Error(errorMessage);
+            }
+        } catch (err: any) {
+            console.error('Error in handleEmailSubmit:', err);
+            const errorMessage = err.message || 'Failed to create account. Please try again.';
+            setError(errorMessage);
             toast({
-                title: "Account created!",
-                description: "Welcome to Threadz BiGaskins. Your account has been created successfully.",
+                title: 'Error',
+                description: errorMessage,
+                variant: 'destructive',
             });
-            navigate('/');
-        } catch (error) {
-            toast({
-                title: "Signup failed",
-                description: "Please try again.",
-                variant: "destructive",
-            });
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    const handleBack = () => {
-        navigate(-1);
+    const handleOAuthSignIn = async (provider: 'google' | 'github') => {
+        try {
+            setIsLoading(true);
+            setError('');
+            
+            if (provider === 'google') {
+                await signInWithGoogle();
+            } else {
+                await signInWithGitHub();
+            }
+            
+            // The OAuth flow will redirect back to the callback URL
+            // which will handle the rest of the authentication
+            
+        } catch (err: any) {
+            setError(err.message || `Failed to sign in with ${provider}`);
+            setIsLoading(false);
+        }
     };
 
-    return (
-        <div className="min-h-screen bg-background flex items-center justify-center p-4">
-            <div className="w-full max-w-md">
-                <Button 
-                    variant="ghost" 
-                    onClick={handleBack}
-                    className="mb-4 flex items-center gap-2"
-                >
-                    <ArrowLeft className="w-4 h-4" />
-                    Back
-                </Button>
-                <Card className="w-full">
-                    <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-serif text-center">Create Account</CardTitle>
-                        <CardDescription className="text-center">
-                            Join Threadz BiGaskins for exclusive fashion access
-                        </CardDescription>
-                    </CardHeader>
-                    <form onSubmit={handleSubmit}>
-                        <CardContent className="space-y-4">
+    const renderStep = () => {
+        switch (step) {
+            case 'method':
+                return (
+                    <div className="space-y-6">
+                        <div className="space-y-2 text-center">
+                            <h1 className="text-2xl font-bold">Create an account</h1>
+                            <p className="text-muted-foreground">Choose your preferred sign up method</p>
+                        </div>
+                        
+                        <div className="grid gap-4">
+                            <Button 
+                                variant="outline" 
+                                type="button" 
+                                className="w-full"
+                                onClick={() => setStep('email')}
+                                disabled={isLoading}
+                            >
+                                <Mail className="mr-2 h-4 w-4" />
+                                Continue with Email
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                type="button" 
+                                className="w-full"
+                                onClick={() => handleOAuthSignIn('google')}
+                                disabled={isLoading}
+                            >
+                                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"
+                                        fill="currentColor"
+                                    />
+                                </svg>
+                                Continue with Google
+                            </Button>
+                            
+                            <Button 
+                                variant="outline" 
+                                type="button" 
+                                className="w-full"
+                                onClick={() => handleOAuthSignIn('github')}
+                                disabled={isLoading}
+                            >
+                                <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+                                    <path
+                                        d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61-.546-1.386-1.333-1.755-1.333-1.755-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 21.795 24 17.295 24 12c0-6.627-5.373-12-12-12z"
+                                        fill="currentColor"
+                                    />
+                                </svg>
+                                Continue with GitHub
+                            </Button>
+                        </div>
+                        
+                        <p className="px-8 text-center text-sm text-muted-foreground">
+                            By clicking continue, you agree to our{' '}
+                            <Link to="/terms" className="underline underline-offset-4 hover:text-primary">
+                                Terms of Service
+                            </Link>{' '}
+                            and{' '}
+                            <Link to="/privacy" className="underline underline-offset-4 hover:text-primary">
+                                Privacy Policy
+                            </Link>
+                            .
+                        </p>
+                    </div>
+                );
+                
+            case 'email':
+                return (
+                    <div className="space-y-6">
+                        <div className="space-y-2 text-center">
+                            <h1 className="text-2xl font-bold">Create an account</h1>
+                            <p className="text-muted-foreground">Enter your email and password to sign up</p>
+                        </div>
+                        
+                        {error && (
+                            <div className="bg-destructive/15 text-destructive p-3 rounded-md text-sm">
+                                {error}
+                            </div>
+                        )}
+                        
+                        <form onSubmit={handleEmailSubmit} className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="name">Full Name</Label>
                                 <Input
                                     id="name"
-                                    placeholder="Enter your full name"
+                                    type="text"
+                                    placeholder="John Doe"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
+                            
                             <div className="space-y-2">
                                 <Label htmlFor="email">Email</Label>
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="Enter your email"
+                                    placeholder="name@example.com"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     required
+                                    disabled={isLoading}
                                 />
                             </div>
+                            
                             <div className="space-y-2">
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="Create a password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    required
-                                />
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="password">Password</Label>
+                                </div>
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showPassword ? 'text' : 'password'}
+                                        placeholder="••••••••"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        required
+                                        disabled={isLoading}
+                                        className="pr-10"
+                                    />
+                                    <button
+                                        type="button"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        disabled={isLoading}
+                                    >
+                                        {showPassword ? (
+                                            <EyeOff className="h-4 w-4" />
+                                        ) : (
+                                            <Eye className="h-4 w-4" />
+                                        )}
+                                    </button>
+                                </div>
+                                <p className="text-xs text-muted-foreground">
+                                    Password must be at least 6 characters
+                                </p>
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">Confirm Password</Label>
-                                <Input
-                                    id="confirmPassword"
-                                    type="password"
-                                    placeholder="Confirm your password"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
-                        </CardContent>
-                        <CardFooter className="flex flex-col space-y-4">
+                            
+                            <Button type="submit" className="w-full" disabled={isLoading}>
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating account...
+                                    </>
+                                ) : (
+                                    'Create account'
+                                )}
+                            </Button>
+                            
                             <Button
-                                type="submit"
+                                type="button"
+                                variant="outline"
                                 className="w-full"
-                                variant="luxury"
+                                onClick={() => setStep('method')}
                                 disabled={isLoading}
                             >
-                                {isLoading ? 'Creating Account...' : 'Create Account'}
+                                Back
                             </Button>
-                            <div className="text-sm text-center text-muted-foreground">
-                                Already have an account?{' '}
-                                <Link to="/login" className="text-primary hover:underline">
-                                    Sign in
-                                </Link>
+                        </form>
+                    </div>
+                );
+                
+            case 'verification':
+                return (
+                    <div className="space-y-8 text-center">
+                        <div className="space-y-4">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                                <Mail className="h-8 w-8 text-green-600" />
                             </div>
-                        </CardFooter>
-                    </form>
-                </Card>
+                            
+                            <div className="space-y-2">
+                                <h1 className="text-2xl font-bold tracking-tight">Check your email</h1>
+                                <p className="text-muted-foreground">
+                                    We've sent a verification link to 
+                                    <span className="mx-1 font-medium text-foreground">{email}</span>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div className="space-y-4 rounded-lg border bg-card p-6 text-left shadow-sm">
+                            <div className="flex items-start space-x-4">
+                                <div className="flex-1 space-y-2">
+                                    <h3 className="font-medium">Didn't receive an email?</h3>
+                                    <p className="text-sm text-muted-foreground">
+                                        Check your spam folder or click below to resend the verification email.
+                                    </p>
+                                </div>
+                                <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="whitespace-nowrap"
+                                    onClick={async () => {
+                                        setIsLoading(true);
+                                        try {
+                                            const result = await resendVerification(email);
+                                            toast({
+                                                title: result.success ? 'Email sent!' : 'Error',
+                                                description: result.message,
+                                                variant: result.success ? 'default' : 'destructive',
+                                            });
+                                        } catch (error) {
+                                            toast({
+                                                title: 'Error',
+                                                description: 'Failed to resend verification email. Please try again.',
+                                                variant: 'destructive',
+                                            });
+                                        } finally {
+                                            setIsLoading(false);
+                                        }
+                                    }}
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Mail className="mr-2 h-4 w-4" />
+                                    )}
+                                    Resend Email
+                                </Button>
+                            </div>
+                        </div>
+                        
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            className="w-full"
+                            onClick={() => navigate('/login')}
+                            disabled={isLoading}
+                        >
+                            Back to login
+                        </Button>
+                    </div>
+                );
+                
+            case 'complete':
+                return (
+                    <div className="space-y-6 text-center">
+                        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                            <Check className="h-6 w-6 text-green-600" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                            <h1 className="text-2xl font-bold">Account created successfully!</h1>
+                            <p className="text-muted-foreground">
+                                Your account has been created. You can now sign in to your account.
+                            </p>
+                        </div>
+                        
+                        <Button
+                            type="button"
+                            className="w-full"
+                            onClick={() => navigate('/login')}
+                        >
+                            Go to login
+                        </Button>
+                    </div>
+                );
+                
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="container relative h-[800px] flex-col items-center justify-center md:grid lg:max-w-none lg:grid-cols-2 lg:px-0">
+            <div className="relative hidden h-full flex-col bg-muted p-10 text-white lg:flex dark:border-r">
+                <div className="absolute inset-0 bg-zinc-900" />
+                <div className="relative z-20 flex items-center text-lg font-medium">
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="mr-2 h-6 w-6"
+                    >
+                        <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3" />
+                    </svg>
+                    Threadz BiGaskins
+                </div>
+                <div className="relative z-20 mt-auto">
+                    <blockquote className="space-y-2">
+                        <p className="text-lg">
+                            &ldquo;This library has saved me countless hours of work and helped me deliver stunning
+                            designs to my clients faster than ever before.&rdquo;
+                        </p>
+                        <footer className="text-sm">Sofia Davis</footer>
+                    </blockquote>
+                </div>
+            </div>
+            
+            <div className="lg:p-8">
+                <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
+                    <div className="flex flex-col space-y-2 text-center">
+                        <h1 className="text-2xl font-semibold tracking-tight">
+                            {step === 'method' ? 'Create an account' : 
+                             step === 'email' ? 'Enter your details' :
+                             step === 'verification' ? 'Verify your email' : 'Account created'}
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {step === 'method' ? 'Choose your preferred sign up method' :
+                             step === 'email' ? 'Enter your information to create an account' :
+                             step === 'verification' ? 'We sent a verification link to your email' :
+                             'Your account has been created successfully'}
+                        </p>
+                    </div>
+                    
+                    <Card>
+                        <CardContent className="pt-6">
+                            {renderStep()}
+                        </CardContent>
+                    </Card>
+                    
+                    {step !== 'verification' && step !== 'complete' && (
+                        <p className="px-8 text-center text-sm text-muted-foreground">
+                            Already have an account?{' '}
+                            <Link to="/login" className="underline underline-offset-4 hover:text-primary">
+                                Sign in
+                            </Link>
+                        </p>
+                    )}
+                </div>
             </div>
         </div>
     );

@@ -16,8 +16,10 @@ const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
 const Index = lazy(() => import("./pages/Index"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
+const Callback = lazy(() => import("./pages/auth/Callback"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Payment = lazy(() => import("./pages/Payment"));
+const TestConnection = lazy(() => import("./pages/TestConnection"));
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CheckoutPage = lazy(() => import("@/pages/checkout/CheckoutPage"));
@@ -58,8 +60,19 @@ const App = () => {
                             <Suspense fallback={<LoadingSpinner />}>
                                 <Routes>
                                     <Route path="/" element={<Index />} />
+                                    <Route path="/payment" element={<Payment />} />
                                     <Route path="/login" element={<Login />} />
-                                    <Route path="/signup" element={<Signup />} />
+                                    <Route path="/signup" element={
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <Signup />
+                                        </Suspense>
+                                    } />
+                                    <Route path="/auth/callback" element={
+                                        <Suspense fallback={<LoadingSpinner />}>
+                                            <Callback />
+                                        </Suspense>
+                                    } />
+                                    <Route path="/test-connection" element={<TestConnection />} />
                                     <Route path="/cart" element={<Cart />} />
                                     <Route path="/checkout" element={<CheckoutPage />} />
                                     <Route path="/order-confirmation" element={<OrderConfirmation />} />
