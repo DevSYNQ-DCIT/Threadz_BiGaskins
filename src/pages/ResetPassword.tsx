@@ -28,16 +28,29 @@ const ResetPassword = () => {
 
         setIsLoading(true);
         try {
-            await updatePassword(password);
+            // First try to update the password directly
+            const { error: updateError } = await supabase.auth.updateUser({
+                password: password
+            });
+
+            if (updateError) throw updateError;
+            
             toast({
                 title: "Success!",
                 description: "Your password has been updated. You can now log in with your new password.",
             });
+            
+            // Sign out the user to ensure clean state
+            await supabase.auth.signOut();
+            
+            // Redirect to login
             navigate('/login');
         } catch (error: any) {
-            const errorMessage = error.message.includes('invalid_grant')
+            console.error('Password reset error:', error);
+            const errorMessage = error.message.includes('invalid_grant') || 
+                              error.message.includes('Auth session missing')
                 ? 'The password reset link is invalid or has expired. Please request a new one.'
-                : 'Failed to update password. Please try again.';
+                : error.message || 'Failed to update password. Please try again.';
                 
             setError(errorMessage);
             
