@@ -40,25 +40,27 @@ interface AuthContextType {
     signInWithGoogle: () => Promise<void>;
     signInWithGitHub: () => Promise<void>;
     logout: () => Promise<void>;
+    resetPassword: (email: string) => Promise<void>;
+    updatePassword: (newPassword: string) => Promise<void>;
     isLoading: boolean;
     isAdmin: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
+export function useAuth(): AuthContextType {
     const context = useContext(AuthContext);
-    if (context === undefined) {
+    if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-};
+}
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export function AuthProvider({ children }: AuthProviderProps) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -234,6 +236,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
     };
 
+    const resetPassword = async (email: string) => {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+    };
+
+    const updatePassword = async (newPassword: string) => {
+        // First check if we have a session
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError || !session) {
+            throw new Error('No active session. Please sign in again.');
+        }
+        
+        // Update the password
+        const { error } = await supabase.auth.updateUser({
+            password: newPassword,
+        });
+        
+        if (error) {
+            console.error('Password update error:', error);
+            throw error;
+        }
+    };
+
     const logout = async () => {
         try {
             await supabase.auth.signOut();
@@ -257,10 +285,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         resendVerification,
         signInWithGoogle,
         signInWithGitHub,
+        resetPassword,
+        updatePassword,
         logout,
         isLoading,
         isAdmin,
     };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-};
+}

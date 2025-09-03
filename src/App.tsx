@@ -16,6 +16,8 @@ const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
 const Index = lazy(() => import("./pages/Index"));
 const Login = lazy(() => import("./pages/Login"));
 const Signup = lazy(() => import("./pages/Signup"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const Callback = lazy(() => import("./pages/auth/Callback"));
 const Cart = lazy(() => import("./pages/Cart"));
 const Payment = lazy(() => import("./pages/Payment"));
@@ -78,6 +80,8 @@ const App = () => {
                                     <Route path="/order-confirmation" element={<OrderConfirmation />} />
                                     <Route path="/payment" element={<Payment />} />
                                     <Route path="/dashboard" element={<Dashboard />} />
+                                    <Route path="/forgot-password" element={<ForgotPassword />} />
+                                    <Route path="/reset-password" element={<ResetPassword />} />
                                     
                                     {/* Admin Routes */}
                                     <Route 
