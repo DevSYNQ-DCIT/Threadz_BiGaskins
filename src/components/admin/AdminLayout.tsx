@@ -117,9 +117,14 @@ export const AdminLayout = () => {
                 <Button
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={() => {
-                    logout();
-                    setMobileMenuOpen(false);
+                  onClick={async () => {
+                    try {
+                      await logout();
+                      setMobileMenuOpen(false);
+                      navigate('/login');
+                    } catch (error) {
+                      console.error('Logout failed:', error);
+                    }
                   }}
                 >
                   <LogOut className="mr-3 h-5 w-5" />
@@ -169,7 +174,14 @@ export const AdminLayout = () => {
                 <Button
                   variant="ghost"
                   className="w-full justify-start"
-                  onClick={logout}
+                  onClick={async () => {
+                    try {
+                      await logout();
+                      navigate('/login');
+                    } catch (error) {
+                      console.error('Logout failed:', error);
+                    }
+                  }}
                 >
                   <LogOut className="mr-3 h-5 w-5" />
                   Logout

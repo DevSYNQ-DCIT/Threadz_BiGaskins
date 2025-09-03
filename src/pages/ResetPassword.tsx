@@ -36,16 +36,21 @@ const ResetPassword = () => {
 
             if (updateError) throw updateError;
             
+            // Show success toast with green color
             toast({
                 title: "Success!",
-                description: "Your password has been updated. You can now log in with your new password.",
+                description: "Your password has been updated successfully!",
+                variant: "default",
+                className: "bg-green-50 text-green-700 border-green-200"
             });
             
             // Sign out the user to ensure clean state
             await supabase.auth.signOut();
             
-            // Redirect to login
-            navigate('/login');
+            // Redirect to login after a short delay
+            setTimeout(() => {
+                navigate('/login');
+            }, 2000);
         } catch (error: unknown) {
             console.error('Password reset error:', error);
             let errorMessage = 'Failed to update password. Please try again.';

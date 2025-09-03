@@ -60,7 +60,8 @@ interface AuthProviderProps {
     children: ReactNode;
 }
 
-export function AuthProvider({ children }: AuthProviderProps) {
+// Create a separate component to avoid Fast Refresh issues
+export const AuthProvider = ({ children }: AuthProviderProps) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -71,14 +72,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
             async (event, session) => {
                 if (session) {
                     setSession(session);
-                    
+
                     // Get or create user profile
                     const { data: profile, error } = await supabase
                         .from('profiles')
                         .select('*')
                         .eq('id', session.user.id)
                         .single();
-                    
+
                     if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
                         console.error('Error fetching user profile:', error);
                     }
@@ -222,7 +223,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
 
             if (error) throw error;
-            
+
             return {
                 success: true,
                 message: 'Verification email resent successfully!',
@@ -246,38 +247,54 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const updatePassword = async (newPassword: string) => {
         // First check if we have a session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
+
         if (sessionError || !session) {
             throw new Error('No active session. Please sign in again.');
         }
-        
+
         // Update the password
         const { error } = await supabase.auth.updateUser({
             password: newPassword,
         });
-        
+
         if (error) {
-            console.error('Password update error:', error);
+            // Handle specific error cases
+            if (error.message.includes('already registered')) {
+                throw new Error('This email is already registered. Please sign in instead.');
+            }
             throw error;
         }
     };
 
     const logout = async () => {
         try {
-            await supabase.auth.signOut();
+            // Clear local state first
             setUser(null);
             setSession(null);
+
+            // Sign out from Supabase
+            const { error } = await supabase.auth.signOut();
+
+            if (error) throw error;
+
+            // Force a hard reload to clear any remaining state
+            window.location.href = '/login';
+
+            return true;
         } catch (error) {
             console.error('Error signing out:', error);
-            throw error;
+            // Even if there's an error, we should still clear local state
+            setUser(null);
+            setSession(null);
+            window.location.href = '/login';
+            return false;
         }
     };
 
-    const isAdmin = (): boolean => {
+    const isAdmin = () => {
         return user?.role === 'admin';
     };
-
-    const value = {
+    const value = React.useMemo(() => ({
         user,
         session,
         login,
@@ -290,7 +307,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         logout,
         isLoading,
         isAdmin,
-    };
+    }), [user, session, isLoading]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
