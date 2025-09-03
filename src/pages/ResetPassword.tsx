@@ -45,12 +45,15 @@ const ResetPassword = () => {
             
             // Redirect to login
             navigate('/login');
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Password reset error:', error);
-            const errorMessage = error.message.includes('invalid_grant') || 
-                              error.message.includes('Auth session missing')
-                ? 'The password reset link is invalid or has expired. Please request a new one.'
-                : error.message || 'Failed to update password. Please try again.';
+            let errorMessage = 'Failed to update password. Please try again.';
+            
+            if (error instanceof Error) {
+                errorMessage = error.message.includes('invalid_grant') || 
+                             error.message.includes('Auth session missing')
+                    ? 'The password reset link is invalid or has expired. Please request a new one.'
+                    : error.message || errorMessage;
                 
             setError(errorMessage);
             
