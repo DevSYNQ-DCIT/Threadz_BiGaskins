@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -49,19 +50,18 @@ const ResetPassword = () => {
             console.error('Password reset error:', error);
             let errorMessage = 'Failed to update password. Please try again.';
             
-            if (error instanceof Error) {
-                errorMessage = error.message.includes('invalid_grant') || 
-                             error.message.includes('Auth session missing')
-                    ? 'The password reset link is invalid or has expired. Please request a new one.'
-                    : error.message || errorMessage;
+                if (error instanceof Error) {
+                    errorMessage = error.message.includes('invalid_grant') || 
+                                 error.message.includes('Auth session missing')
+                        ? 'The password reset link is invalid or has expired. Please request a new one.'
+                        : error.message || errorMessage;
+                }
                 
-            setError(errorMessage);
-            
-            toast({
-                title: "Error",
-                description: errorMessage,
-                variant: "destructive",
-            });
+                toast({
+                    title: "Error",
+                    description: errorMessage,
+                    variant: "destructive",
+                });
         } finally {
             setIsLoading(false);
         }
