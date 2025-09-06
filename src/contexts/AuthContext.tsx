@@ -73,24 +73,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 if (session) {
                     setSession(session);
 
-                    // Get or create user profile
-                    const { data: profile, error } = await supabase
-                        .from('profiles')
-                        .select('*')
-                        .eq('id', session.user.id)
-                        .single();
-
-                    if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
-                        console.error('Error fetching user profile:', error);
+                    // For password reset flow, we don't need to fetch the profile
+                    if (window.location.pathname === '/reset-password') {
+                        setUser({
+                            id: session.user.id,
+                            email: session.user.email!,
+                            name: 'User',
+                            role: 'user'
+                        });
+                        setIsLoading(false);
+                        return;
                     }
 
-                    setUser({
-                        id: session.user.id,
-                        email: session.user.email!,
-                        name: profile?.full_name || session.user.user_metadata?.full_name || 'User',
-                        role: profile?.role || 'user',
-                        avatar_url: profile?.avatar_url || session.user.user_metadata?.avatar_url,
-                    });
+                    // Get or create user profile for normal auth flow
+                    try {
+                        const { data: profile, error } = await supabase
+                            .from('profiles')
+                            .select('*')
+                            .eq('id', session.user.id)
+                            .single();
+
+                        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+                            console.error('Error fetching user profile:', error);
+                        }
+
+                        setUser({
+                            id: session.user.id,
+                            email: session.user.email!,
+                            name: profile?.full_name || session.user.user_metadata?.full_name || 'User',
+                            role: profile?.role || 'user',
+                            avatar_url: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                        });
+                    } catch (error) {
+                        console.error('Error in auth state change:', error);
+                    }
                 } else {
                     setSession(null);
                     setUser(null);
@@ -245,25 +261,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
 
     const updatePassword = async (newPassword: string) => {
-        // First check if we have a session
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError || !session) {
-            throw new Error('No active session. Please sign in again.');
-        }
-
-        // Update the password
-        const { error } = await supabase.auth.updateUser({
-            password: newPassword,
+      try {
+        // No need for session — Supabase reads token from URL automatically
+        const { data, error } = await supabase.auth.updateUser({
+          password: newPassword,
         });
 
         if (error) {
-            // Handle specific error cases
-            if (error.message.includes('already registered')) {
-                throw new Error('This email is already registered. Please sign in instead.');
-            }
-            throw error;
+          console.error('Password update error:', error);
+          if (error.message.includes('invalid_grant') || error.message.includes('Auth session missing')) {
+            throw new Error('The password reset link is invalid or has expired. Please request a new one.');
+          }
+          throw new Error(error.message || 'Failed to update password');
         }
+
+        return { success: true, message: 'Password updated successfully' };
+      } catch (error: any) {
+        console.error('Error in updatePassword:', error);
+        throw error;
+      }
     };
 
     const logout = async () => {

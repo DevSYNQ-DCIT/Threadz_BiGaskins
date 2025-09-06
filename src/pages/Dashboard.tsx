@@ -1,17 +1,40 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, Package, Heart, Settings, LogOut, ArrowLeft, CreditCard, MapPin, Bell, Lock, Calendar, Phone } from 'lucide-react';
+import { ChangePasswordModal } from '@/components/ChangePasswordModal';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
-    const { user, logout } = useAuth();
+    const { user, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
+    
+    // Ensure user is logged in
+    useEffect(() => {
+        if (!user) {
+            navigate('/login');
+        }
+    }, [user, navigate]);
+    
+    const handleLogout = useCallback(async () => {
+        try {
+            await logout();
+            navigate('/login');
+        } catch (error) {
+            console.error('Failed to log out', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to log out. Please try again.',
+                variant: 'destructive',
+            });
+        }
+    }, [logout, navigate]);
 
     // Sample data - in a real app, this would come from your backend
     const [profile, setProfile] = useState({
@@ -62,7 +85,6 @@ const Dashboard = () => {
     ]);
 
     const handleBack = () => navigate(-1);
-    const handleLogout = () => { logout(); navigate('/'); };
     const handleProfileUpdate = (e: React.FormEvent) => {
         e.preventDefault();
         // Update profile logic here
@@ -473,7 +495,9 @@ const Dashboard = () => {
                                                 Update your password regularly to keep your account secure.
                                             </p>
                                         </div>
-                                        <Button variant="outline">Change</Button>
+                                        <ChangePasswordModal>
+                                          <Button variant="outline">Change</Button>
+                                        </ChangePasswordModal>
                                     </div>
 
                                     <div className="flex items-center pt-4 border-t">
