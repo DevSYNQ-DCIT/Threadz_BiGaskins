@@ -93,7 +93,7 @@ const topProducts = [
 ];
 
 const stats = [
-  { title: 'Total Revenue', value: '$45,231.89', change: '+20.1%', trend: 'up', icon: DollarSign },
+  { title: 'Total Revenue', value: formatCurrency(45231.89), change: '+20.1%', trend: 'up', icon: DollarSign },
   { title: 'Total Orders', value: '2,345', change: '+12.5%', trend: 'up', icon: ShoppingBag },
   { title: 'New Customers', value: '1,234', change: '+8.2%', trend: 'up', icon: Users },
   { title: 'Products', value: '1,234', change: '-2.3%', trend: 'down', icon: Package },
@@ -304,7 +304,7 @@ const DashboardPage = () => {
                         </p>
                       </div>
                       <div className="ml-auto font-medium">
-                        ${order.amount.toFixed(2)}
+                        {formatCurrency(order.amount)}
                       </div>
                     </div>
                   ))}
@@ -332,7 +332,7 @@ const DashboardPage = () => {
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        <p className="text-sm font-medium">${order.amount.toFixed(2)}</p>
+                        <p className="text-sm font-medium">{formatCurrency(order.amount)}</p>
                         <StatusBadge status={order.status} />
                         <Button variant="ghost" size="icon">
                           <MoreVertical className="h-4 w-4" />
@@ -380,11 +380,11 @@ const DashboardPage = () => {
                       <div className="ml-4 space-y-1">
                         <p className="text-sm font-medium leading-none">{product.name}</p>
                         <p className="text-sm text-muted-foreground">
-                          {product.sales} sold • ${product.revenue.toLocaleString()}
+                          {product.sales} sold • {formatCurrency(product.revenue)}
                         </p>
                       </div>
                       <div className="ml-auto font-medium">
-                        ${(product.revenue / product.sales).toFixed(2)}
+                        {formatCurrency(product.revenue / product.sales)}
                       </div>
                     </div>
                   ))}
