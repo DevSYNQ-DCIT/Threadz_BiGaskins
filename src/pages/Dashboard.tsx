@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { User, Package, Heart, Settings, LogOut, ArrowLeft, CreditCard, MapPin, Bell, Lock, Calendar, Phone } from 'lucide-react';
 import { ChangePasswordModal } from '@/components/ChangePasswordModal';
+import { NotificationPreferencesModal } from '@/components/NotificationPreferencesModal';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,6 +15,7 @@ const Dashboard = () => {
     const { user, logout, isAdmin } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState('profile');
+    const [isLoading, setIsLoading] = useState(false);
     
     // Ensure user is logged in
     useEffect(() => {
@@ -85,9 +87,30 @@ const Dashboard = () => {
     ]);
 
     const handleBack = () => navigate(-1);
-    const handleProfileUpdate = (e: React.FormEvent) => {
+    const handleProfileUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
-        // Update profile logic here
+        setIsLoading(true);
+        
+        try {
+            // In a real app, you would make an API call to update the user's profile
+            // For example:
+            // await updateUserProfile(profile);
+            
+            toast({
+                title: 'Success!',
+                description: 'Your profile has been updated.',
+            });
+            
+        } catch (error) {
+            console.error('Error updating profile:', error);
+            toast({
+                title: 'Error',
+                description: 'Failed to update profile. Please try again.',
+                variant: 'destructive',
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     if (!user) {
@@ -196,8 +219,26 @@ const Dashboard = () => {
                                                     <User className="w-16 h-16 text-gray-400" />
                                                 )}
                                             </div>
-                                            <Button variant="outline" type="button">
+                                            <Button variant="outline" type="button" className="relative">
                                                 Change Photo
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0];
+                                                        if (file) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                setProfile({
+                                                                    ...profile,
+                                                                    avatar: reader.result as string
+                                                                });
+                                                            };
+                                                            reader.readAsDataURL(file);
+                                                        }
+                                                    }}
+                                                />
                                             </Button>
                                         </div>
                                     </div>
@@ -253,8 +294,10 @@ const Dashboard = () => {
                                         </div>
                                     </div>
 
-                                    <div className="flex justify-end pt-4">
-                                        <Button type="submit">Save Changes</Button>
+                                    <div className="flex justify-end pt-6 border-t">
+                                        <Button type="submit" disabled={isLoading}>
+                                            {isLoading ? 'Saving...' : 'Save Changes'}
+                                        </Button>
                                     </div>
                                 </form>
                             </CardContent>
@@ -415,7 +458,7 @@ const Dashboard = () => {
                                                             <p className="font-medium">•••• •••• •••• {payment.last4}</p>
                                                             <p className="text-sm text-muted-foreground">Expires {payment.exp}</p>
                                                             {payment.isDefault && (
-                                                                <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full mt-1 inline-block">
+                                                                <span className="text-xs bg-primary text-primary-foreground px-2 py-0.5 rounded-full">
                                                                     Default
                                                                 </span>
                                                             )}
@@ -508,7 +551,9 @@ const Dashboard = () => {
                                                 Manage how you receive notifications from us.
                                             </p>
                                         </div>
-                                        <Button variant="outline">Manage</Button>
+                                        <NotificationPreferencesModal>
+                                            <Button variant="outline">Manage</Button>
+                                        </NotificationPreferencesModal>
                                     </div>
 
                                     <div className="flex items-center pt-4 border-t">

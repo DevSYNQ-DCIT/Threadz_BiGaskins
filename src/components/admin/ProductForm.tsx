@@ -122,7 +122,6 @@ export const ProductForm = ({
                           className="sr-only"
                           accept="image/*"
                           onChange={handleImageUpload}
-                          disabled={isUploading}
                         />
                       </label>
                       <p className="pl-1">or drag and drop</p>

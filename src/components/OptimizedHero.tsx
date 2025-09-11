@@ -141,13 +141,13 @@ const OptimizedHero = () => {
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
               </Button>
 
-              <Button 
-                variant="hero" 
-                size="lg"
-                aria-label="View our portfolio"
-              >
-                View Portfolio
-              </Button>
+              {/*<Button */}
+              {/*  variant="hero" */}
+              {/*  size="lg"*/}
+              {/*  aria-label="View our portfolio"*/}
+              {/*>*/}
+              {/*  View Portfolio*/}
+              {/*</Button>*/}
             </div>
           </div>
         </div>
