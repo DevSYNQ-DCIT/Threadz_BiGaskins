@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Mail, Eye, EyeOff, Check } from 'lucide-react';
+import { Loader2, Mail, Eye, EyeOff, Check, ArrowLeft } from 'lucide-react';
 
 type SignupStep = 'method' | 'email' | 'verification' | 'complete';
 
@@ -378,6 +378,17 @@ const Signup = () => {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-gray-50">
             <div className="w-full max-w-md">
+                <div className="mb-6">
+                    <Button 
+                        variant="ghost" 
+                        className="px-0 text-muted-foreground hover:bg-transparent hover:text-black -ml-2 transition-colors"
+                        onClick={() => navigate('/')}
+                    >
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        Back to Home
+                    </Button>
+                </div>
+                
                 <div className="text-center mb-6">
                     <h1 className="text-2xl font-bold text-gray-900 mb-2">
                         {step === 'method' ? 'Create an account' : 
