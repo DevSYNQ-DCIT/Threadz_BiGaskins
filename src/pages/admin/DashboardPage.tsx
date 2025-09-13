@@ -1,53 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, 
-  Package, 
-  ShoppingBag, 
-  DollarSign, 
-  ArrowUp, 
-  ArrowDown, 
-  TrendingUp,
-  Plus,
-  User,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Activity,
-  RefreshCw,
-  ArrowRight,
-  Calendar,
-  MoreVertical,
-  Truck,
-} from 'lucide-react';
-import { UserAvatar } from '@/components/UserAvatar';
-import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-  AreaChart,
-  Area
-} from 'recharts';
+import { Users, Package, ShoppingBag, DollarSign, ArrowUp, ArrowDown, TrendingUp, User } from 'lucide-react';
+import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { cn } from '@/lib/utils';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { format } from 'date-fns';
 import { formatCurrency } from '@/lib/formatters';
 import { getRandomProductImage } from '@/lib/images';
 import { 
@@ -90,13 +51,7 @@ const topProducts = [
   { id: 2, name: 'Slim Fit Jeans', category: 'Pants', sales: 856, revenue: 25680 },
   { id: 3, name: 'Leather Jacket', category: 'Outerwear', sales: 342, revenue: 23940 },
   { id: 4, name: 'Running Shoes', category: 'Footwear', sales: 721, revenue: 36050 },
-];
-
-const stats = [
-  { title: 'Total Revenue', value: formatCurrency(45231.89), change: '+20.1%', trend: 'up', icon: DollarSign },
-  { title: 'Total Orders', value: '2,345', change: '+12.5%', trend: 'up', icon: ShoppingBag },
-  { title: 'New Customers', value: '1,234', change: '+8.2%', trend: 'up', icon: Users },
-  { title: 'Products', value: '1,234', change: '-2.3%', trend: 'down', icon: Package },
+  { id: 5, name: 'Cotton T-Shirt', category: 'Shirts', sales: 1120, revenue: 15680 },
 ];
 
 interface StatCardProps {
@@ -107,13 +62,13 @@ interface StatCardProps {
   trend: 'up' | 'down';
 }
 
-const StatCard: React.FC<StatCardProps> = ({ 
+const StatCard = ({ 
   title, 
   value, 
   icon: Icon, 
   change, 
   trend 
-}) => {
+}: StatCardProps) => {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -126,7 +81,7 @@ const StatCard: React.FC<StatCardProps> = ({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
-        <p className="text-xs text-muted-foreground flex items-center mt-1">
+        <p className="text-xs text-muted-foreground flex items-center">
           {trend === 'up' ? (
             <ArrowUp className="h-3 w-3 text-green-500 mr-1" />
           ) : (
@@ -140,36 +95,27 @@ const StatCard: React.FC<StatCardProps> = ({
 };
 
 const StatusBadge = ({ status }: { status: string }) => {
-  const statusMap: Record<string, string> = {
-    completed: 'bg-green-100 text-green-800',
-    processing: 'bg-blue-100 text-blue-800',
-    shipped: 'bg-yellow-100 text-yellow-800',
-    pending: 'bg-gray-100 text-gray-800',
+  const statusMap: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
+    completed: { label: 'Completed', variant: 'default' },
+    processing: { label: 'Processing', variant: 'secondary' },
+    shipped: { label: 'Shipped', variant: 'outline' },
+    pending: { label: 'Pending', variant: 'destructive' },
   };
 
-  const statusIcons: Record<string, React.ReactNode> = {
-    completed: <CheckCircle2 className="h-3 w-3 mr-1" />,
-    processing: <RefreshCw className="h-3 w-3 mr-1 animate-spin" />,
-    shipped: <Truck className="h-3 w-3 mr-1" />,
-    pending: <Clock className="h-3 w-3 mr-1" />,
-  };
+  const statusInfo = statusMap[status.toLowerCase()] || { label: status, variant: 'outline' as const };
 
   return (
-    <Badge 
-      className={`${statusMap[status] || 'bg-gray-100 text-gray-800'} text-xs font-medium capitalize`}
-    >
-      {statusIcons[status]}
-      {status}
+    <Badge variant={statusInfo.variant} className="text-xs">
+      {statusInfo.label}
     </Badge>
   );
 };
 
 const DashboardPage = () => {
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('overview');
 
-  // Simulate data loading
   useEffect(() => {
+    // Simulate loading data
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1500);
@@ -179,390 +125,242 @@ const DashboardPage = () => {
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-        
-        <DashboardStatsSkeleton />
-        
-        <div className="grid gap-6 md:grid-cols-2">
-          <DashboardChartSkeleton />
-          <DashboardChartSkeleton />
-        </div>
-        
-        <div className="grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <RecentOrdersSkeleton />
+      <div className="p-6">
+        <div className="grid gap-4">
+          <Skeleton className="h-10 w-1/3" />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-36" />
+            ))}
           </div>
-          <div className="space-y-6">
-            <div className="rounded-lg border p-6">
-              <Skeleton className="mb-6 h-6 w-48" />
-              <RecentActivitySkeleton />
-            </div>
-            <div className="rounded-lg border p-6">
-              <Skeleton className="mb-6 h-6 w-48" />
-              <TopProductsSkeleton />
-            </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Skeleton className="col-span-4 h-80" />
+            <Skeleton className="col-span-3 h-80" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Skeleton className="col-span-4 h-80" />
+            <Skeleton className="col-span-3 h-80" />
           </div>
         </div>
       </div>
     );
   }
 
-  const totalRevenue = stats.reduce((sum, stat) => {
-    if (stat.title === 'Total Revenue') {
-      return sum + parseFloat(stat.value.replace(/[^0-9.-]+/g, ''));
-    }
-    return sum;
-  }, 0);
-
-  const totalSales = recentOrders.length;
-  const completedOrders = recentOrders.filter(order => order.status === 'completed').length;
-  const conversionRate = Math.round((completedOrders / totalSales) * 100) || 0;
-
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Add New
-        </Button>
+    <div className="p-6 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
+        <p className="text-muted-foreground">
+          Welcome back! Here's what's happening with your store today.
+        </p>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4" onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
-          <TabsTrigger value="reports">Reports</TabsTrigger>
-        </TabsList>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Total Revenue"
+          value={formatCurrency(45231.89)}
+          icon={<DollarSign className="h-4 w-4" />}
+          change={12.5}
+          trend="up"
+        />
+        <StatCard
+          title="Orders"
+          value={"2,351"}
+          icon={<ShoppingBag className="h-4 w-4" />}
+          change={8.2}
+          trend="up"
+        />
+        <StatCard
+          title="Customers"
+          value={"1,249"}
+          icon={<Users className="h-4 w-4" />}
+          change={5.7}
+          trend="up"
+        />
+        <StatCard
+          title="Products in Stock"
+          value={"1,024"}
+          icon={<Package className="h-4 w-4" />}
+          change={-2.3}
+          trend="down"
+        />
+      </div>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat, index) => (
-              <StatCard
-                key={index}
-                title={stat.title}
-                value={stat.value}
-                icon={<stat.icon className="h-4 w-4" />}
-                change={parseFloat(stat.change.replace(/[^0-9.-]+/g, ''))}
-                trend={stat.trend}
-              />
-            ))}
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
-                  <AreaChart data={monthlySalesData}>
-                    <XAxis
-                      dataKey="name"
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `$${value}`}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="revenue"
-                      stackId="1"
-                      stroke="#8884d8"
-                      fill="#8884d8"
-                    />
-                    <Tooltip />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Recent Sales</CardTitle>
-                <CardDescription>You made {totalSales} sales this month.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-8">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{order.customer}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {order.id} • {new Date(order.date).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        {formatCurrency(order.amount)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            <Card className="col-span-2">
-              <CardHeader>
-                <CardTitle>Recent Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                          <User className="h-5 w-5 text-muted-foreground" />
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+            <CardDescription>Monthly revenue and orders</CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlySalesData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis 
+                    dataKey="name" 
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <YAxis 
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <Tooltip 
+                    content={({ active, payload }) => {
+                      if (!active || !payload || payload.length === 0) {
+                        return null;
+                      }
+                      
+                      return (
+                        <div className="rounded-lg border bg-background p-4 shadow-sm">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col">
+                              <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                Revenue
+                              </span>
+                              <span className="font-bold text-muted-foreground">
+                                {payload[0]?.value ? formatCurrency(Number(payload[0].value)) : 'N/A'}
+                              </span>
+                            </div>
+                            {payload[1] && (
+                              <div className="flex flex-col">
+                                <span className="text-[0.70rem] uppercase text-muted-foreground">
+                                  Orders
+                                </span>
+                                <span className="font-bold">
+                                  {payload[1]?.value?.toLocaleString() || 'N/A'}
+                                </span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm font-medium leading-none">{order.customer}</p>
-                          <p className="text-sm text-muted-foreground">{order.id}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <p className="text-sm font-medium">{formatCurrency(order.amount)}</p>
-                        <StatusBadge status={order.status} />
-                        <Button variant="ghost" size="icon">
-                          <MoreVertical className="h-4 w-4" />
-                          <span className="sr-only">More</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Recent Activity</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {recentActivity.map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium leading-none">{activity.user}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {activity.action} • {activity.time}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Top Products</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {topProducts.map((product) => (
-                    <div key={product.id} className="flex items-center">
-                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {product.sales} sold • {formatCurrency(product.revenue)}
-                        </p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        {formatCurrency(product.revenue / product.sales)}
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                      );
+                    }}
+                  />
+                  <Bar 
+                    dataKey="revenue" 
+                    fill="#8884d8" 
+                    radius={[4, 4, 0, 0]}
+                    className="fill-primary"
+                  />
+                  <Line 
+                    type="monotone" 
+                    dataKey="orders" 
+                    stroke="#82ca9d"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </BarChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        </TabsContent>
+          </CardContent>
+        </Card>
 
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Revenue
-                </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">${totalRevenue.toLocaleString()}</div>
-                <p className="text-xs text-muted-foreground">
-                  +20.1% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Orders
-                </CardTitle>
-                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{totalSales}</div>
-                <p className="text-xs text-muted-foreground">
-                  +12.5% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Conversion Rate
-                </CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{conversionRate}%</div>
-                <p className="text-xs text-muted-foreground">
-                  +5.3% from last month
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Now
-                </CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">+573</div>
-                <p className="text-xs text-muted-foreground">
-                  +201 since last hour
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-4">
-              <CardHeader>
-                <CardTitle>Sales Overview</CardTitle>
-              </CardHeader>
-              <CardContent className="pl-2">
-                <ResponsiveContainer width="100%" height={350}>
-                  <BarChart data={monthlySalesData}>
-                    <XAxis
-                      dataKey="name"
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      stroke="#888888"
-                      fontSize={12}
-                      tickLine={false}
-                      axisLine={false}
-                      tickFormatter={(value) => `$${value}`}
-                    />
-                    <Bar dataKey="revenue" fill="#8884d8" radius={[4, 4, 0, 0]} />
-                    <Tooltip />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-
-            <Card className="col-span-3">
-              <CardHeader>
-                <CardTitle>Top Products</CardTitle>
-                <CardDescription>Best selling products this month</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {topProducts.map((product) => (
-                    <div key={product.id} className="flex items-center">
-                      <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center">
-                        <Package className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="ml-4 space-y-1">
-                        <p className="text-sm font-medium leading-none">{product.name}</p>
-                        <p className="text-sm text-muted-foreground">{product.category}</p>
-                      </div>
-                      <div className="ml-auto font-medium">
-                        {product.sales} sold
-                      </div>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Orders</CardTitle>
+            <CardDescription>Latest 5 orders from your store</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentOrders.map((order) => (
+                <div key={order.id} className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium leading-none">
+                      {order.id}
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      {order.customer}
+                    </p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <StatusBadge status={order.status} />
+                    <div className="text-right">
+                      <p className="text-sm font-medium">
+                        {formatCurrency(order.amount)}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {order.date}
+                      </p>
                     </div>
-                  ))}
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
-        <TabsContent value="reports" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Reports</CardTitle>
-              <CardDescription>Generate and download reports</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="rounded-md border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Sales Report</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Download a detailed sales report for the selected period
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Top Products</CardTitle>
+            <CardDescription>Best selling products by revenue</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {topProducts.map((product) => (
+                <div key={product.id} className="flex items-center">
+                  <div className="mr-4 h-12 w-12 overflow-hidden rounded-md">
+                    <img
+                      src={getRandomProductImage()}
+                      alt={product.name}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{product.name}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {product.category}
                     </p>
                   </div>
-                  <Button variant="outline">
-                    <ArrowDown className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-              <div className="rounded-md border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Customer Report</h3>
-                    <p className="text-sm text-muted-foreground">
-                      Download a detailed customer report
+                  <div className="text-right">
+                    <p className="text-sm font-medium">
+                      {formatCurrency(product.revenue)}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {product.sales.toLocaleString()} sold
                     </p>
                   </div>
-                  <Button variant="outline">
-                    <ArrowDown className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
                 </div>
-              </div>
-              <div className="rounded-md border p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-medium">Inventory Report</h3>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Activity</CardTitle>
+            <CardDescription>Latest activities in your store</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start">
+                  <div className="mr-3 flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
+                    <User className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="flex-1 space-y-1">
+                    <p className="text-sm font-medium">{activity.user}</p>
                     <p className="text-sm text-muted-foreground">
-                      Download a detailed inventory report
+                      {activity.action}
                     </p>
                   </div>
-                  <Button variant="outline">
-                    <ArrowDown className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
+                  <div className="text-xs text-muted-foreground">
+                    {activity.time}
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

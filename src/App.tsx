@@ -29,6 +29,7 @@ const OrderConfirmation = lazy(() => import("@/pages/OrderConfirmation"));
 
 // Admin Pages
 const AdminDashboard = lazy(() => import("@/pages/admin/DashboardPage"));
+const AnalyticsPage = lazy(() => import("@/pages/admin/AnalyticsPage"));
 const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
 const ProductsPage = lazy(() => import("@/pages/admin/ProductsPage"));
 const OrdersPage = lazy(() => import("@/pages/admin/OrdersPage"));
@@ -94,6 +95,7 @@ const App = () => {
                                     >
                                         <Route index element={<Navigate to="dashboard" replace />} />
                                         <Route path="dashboard" element={<AdminDashboard />} />
+                                        <Route path="analytics" element={<AnalyticsPage />} />
                                         <Route path="users" element={<UsersPage />} />
                                         <Route path="products" element={<ProductsPage />} />
                                         <Route path="orders" element={<OrdersPage />} />
