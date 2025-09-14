@@ -1,18 +1,102 @@
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/supabase';
 
-// For testing - Replace these with your actual Supabase URL and Anon Key
-const SUPABASE_URL = 'https://vanzoqoooqnvotjaiiyr.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhbnpvcW9vb3Fudm90amFpaXlyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY3MzM1MTgsImV4cCI6MjA3MjMwOTUxOH0.JaGDeSyGo1HZcjMtZGzgS0g7jbF89nmjkkwFHVWvQvw';
+// Debug: Log environment variables (remove in production)
+console.log('Loading Supabase with environment:', {
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? '✅ Present' : '❌ Missing',
+  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? '✅ Present' : '❌ Missing',
+});
 
-// Log the values to verify they're being set
-console.log('Supabase URL:', SUPABASE_URL ? '✅ Present' : '❌ Missing');
-console.log('Supabase Key:', SUPABASE_ANON_KEY ? '✅ Present' : '❌ Missing');
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error('Missing Supabase credentials. Please update supabase.ts with your actual credentials.');
+if (!supabaseUrl || !supabaseAnonKey) {
+  const errorMessage = 'Missing Supabase environment variables. Please check your .env.local file.';
+  console.error('❌', errorMessage);
+  console.log('Current environment variables:', {
+    VITE_SUPABASE_URL: supabaseUrl || 'undefined',
+    VITE_SUPABASE_ANON_KEY: supabaseAnonKey ? '***' + supabaseAnonKey.slice(-4) : 'undefined'
+  });
+  throw new Error(errorMessage);
 }
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+  },
+  realtime: {
+    params: {
+      eventsPerSecond: 10,
+    },
+  },
+});
+
+// Test the connection (optional, for debugging)
+supabase.auth.getSession()
+  .then(({ data: { session } }) => {
+    console.log('Supabase initialized successfully!', {
+      isAuthenticated: !!session?.user,
+      user: session?.user?.email || 'No user logged in'
+    });
+  })
+  .catch(error => {
+    console.error('Supabase initialization warning:', error.message);
+  });
+
+// Helper function to handle Supabase errors
+export const handleSupabaseError = (error: any) => {
+  console.error('Supabase error:', error);
+  throw new Error(error.message || 'An error occurred with the database');
+};
+
+// Type for the database schema
+type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[];
+
+type Database = {
+  public: {
+    Tables: {
+      profiles: {
+        Row: {
+          id: string;
+          email: string;
+          full_name: string | null;
+          role: string;
+          avatar_url: string | null;
+          updated_at: string;
+          created_at: string;
+        };
+        Insert: {
+          id: string;
+          email: string;
+          full_name?: string | null;
+          role?: string;
+          avatar_url?: string | null;
+          updated_at?: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          email?: string;
+          full_name?: string | null;
+          role?: string;
+          avatar_url?: string | null;
+          updated_at?: string;
+          created_at?: string;
+        };
+      };
+    };
+  };
+};
 
 export const signUpWithEmail = async (email: string, password: string, name: string) => {
   try {
@@ -23,12 +107,12 @@ export const signUpWithEmail = async (email: string, password: string, name: str
         data: {
           full_name: name,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: `http://localhost:8080/auth/callback`,
       },
     });
 
-    if (error) throw error;
-    
+    if (error) handleSupabaseError(error);
+
     // Return success status and data
     return { 
       success: true, 
@@ -46,30 +130,45 @@ export const signUpWithEmail = async (email: string, password: string, name: str
 };
 
 export const signInWithGoogle = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `http://localhost:8080/auth/callback`,
+      },
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) handleSupabaseError(error);
+    return data;
+  } catch (error) {
+    console.error('Google signin error:', error);
+    throw error;
+  }
 };
 
 export const signInWithGitHub = async () => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: 'github',
-    options: {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    },
-  });
+  try {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `http://localhost:8080/auth/callback`,
+      },
+    });
 
-  if (error) throw error;
-  return data;
+    if (error) handleSupabaseError(error);
+    return data;
+  } catch (error) {
+    console.error('GitHub signin error:', error);
+    throw error;
+  }
 };
 
 export const signOut = async () => {
-  const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) handleSupabaseError(error);
+  } catch (error) {
+    console.error('Signout error:', error);
+    throw error;
+  }
 };

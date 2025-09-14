@@ -1,10 +1,11 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { User as SupabaseUser, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 
+// Types and interfaces
 export type UserRole = 'user' | 'admin';
 
-interface User {
+export interface User {
     id: string;
     email: string;
     name: string;
@@ -25,7 +26,7 @@ type AuthUser = {
     updated_at: string;
 };
 
-interface SignUpResponse {
+export interface SignUpResponse {
     success: boolean;
     message: string;
     data: any;
@@ -46,34 +47,53 @@ interface AuthContextType {
     isAdmin: () => boolean;
 }
 
+// Create the context with a default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function useAuth(): AuthContextType {
+// Custom hook to use the auth context
+const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
     }
     return context;
-}
+};
 
-interface AuthProviderProps {
-    children: ReactNode;
-}
-
-// Create a separate component to avoid Fast Refresh issues
-export const AuthProvider = ({ children }: AuthProviderProps) => {
+// AuthProvider component
+const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // Helper function to fetch user profile
+    const fetchUserProfile = useCallback(async (userId: string) => {
+        try {
+            const { data: profile, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .single();
+
+            if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
+                console.error('Error fetching user profile:', error);
+                throw error;
+            }
+
+            return profile;
+        } catch (error) {
+            console.error('Error in fetchUserProfile:', error);
+            throw error;
+        }
+    }, []);
+
+    // Handle auth state changes
     useEffect(() => {
-        // Check active sessions and set the user
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event, session) => {
                 if (session) {
                     setSession(session);
 
-                    // For password reset flow, we don't need to fetch the profile
+                    // For password reset flow
                     if (window.location.pathname === '/reset-password') {
                         setUser({
                             id: session.user.id,
@@ -87,25 +107,19 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
                     // Get or create user profile for normal auth flow
                     try {
-                        const { data: profile, error } = await supabase
-                            .from('profiles')
-                            .select('*')
-                            .eq('id', session.user.id)
-                            .single();
-
-                        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows returned
-                            console.error('Error fetching user profile:', error);
-                        }
-
+                        const profile = await fetchUserProfile(session.user.id);
+                        
                         setUser({
                             id: session.user.id,
                             email: session.user.email!,
                             name: profile?.full_name || session.user.user_metadata?.full_name || 'User',
-                            role: profile?.role || 'user',
+                            role: (profile?.role as UserRole) || 'user',
                             avatar_url: profile?.avatar_url || session.user.user_metadata?.avatar_url,
+                            created_at: profile?.created_at,
+                            updated_at: profile?.updated_at
                         });
                     } catch (error) {
-                        console.error('Error in auth state change:', error);
+                        console.error('Error handling auth state change:', error);
                     }
                 } else {
                     setSession(null);
@@ -115,10 +129,252 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             }
         );
 
+        // Initial session check
+        const checkSession = async () => {
+            try {
+                const { data: { session: currentSession } } = await supabase.auth.getSession();
+                if (currentSession) {
+                    const profile = await fetchUserProfile(currentSession.user.id);
+                    setSession(currentSession);
+                    setUser({
+                        id: currentSession.user.id,
+                        email: currentSession.user.email!,
+                        name: profile?.full_name || currentSession.user.user_metadata?.full_name || 'User',
+                        role: (profile?.role as UserRole) || 'user',
+                        avatar_url: profile?.avatar_url || currentSession.user.user_metadata?.avatar_url,
+                        created_at: profile?.created_at,
+                        updated_at: profile?.updated_at
+                    });
+                }
+            } catch (error) {
+                console.error('Error checking session:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        checkSession();
+
         return () => {
             subscription.unsubscribe();
         };
-    }, []);
+    }, [fetchUserProfile]);
+
+    // Auth methods will be implemented here
+    const signUp = async (email: string, password: string, name: string): Promise<SignUpResponse> => {
+        setIsLoading(true);
+        console.log('Starting signup process...', { email, name });
+        
+        try {
+            // 1. First sign up the user with Supabase Auth
+            console.log('Attempting to create auth user...');
+            
+            // Log environment variables (without sensitive data)
+            console.log('Supabase URL:', 
+                import.meta.env.VITE_SUPABASE_URL 
+                    ? `${import.meta.env.VITE_SUPABASE_URL.substring(0, 20)}...` 
+                    : 'Not set');
+
+            const signUpPayload = {
+                email: email.toLowerCase().trim(),
+                password: password.trim(),
+                options: {
+                    data: {
+                        full_name: name.trim(),
+                        email: email.toLowerCase().trim(),
+                    },
+                    emailRedirectTo: `http://localhost:8080/auth/callback`,
+                },
+            };
+            
+            console.log('Signup payload (sanitized):', {
+                ...signUpPayload,
+                password: '***', // Don't log actual password
+                options: {
+                    ...signUpPayload.options,
+                    data: {
+                        ...signUpPayload.options.data,
+                        email: signUpPayload.options.data.email ? '***@***' : 'missing'
+                    }
+                }
+            });
+
+            // Make the signup request
+            const { data, error } = await supabase.auth.signUp(signUpPayload);
+
+            if (error) {
+                console.error(' Auth signup error:', {
+                    name: error.name,
+                    message: error.message,
+                    status: error.status,
+                    cause: error.cause,
+                    stack: error.stack,
+                    // Include additional error details if available
+                    ...(error as any).response?.data && { responseData: (error as any).response.data },
+                    ...(error as any).response?.statusText && { statusText: (error as any).response.statusText }
+                });
+
+                // Handle specific error cases
+                if (error.message.includes('already registered')) {
+                    throw new Error('This email is already registered. Please sign in instead.');
+                } else if (error.message.includes('password')) {
+                    throw new Error('Invalid password. Please use a stronger password.');
+                } else if (error.message.includes('email')) {
+                    throw new Error('Invalid email address. Please check and try again.');
+                } else if (error.status === 500) {
+                    console.error(' 500 Error Details:', {
+                        status: error.status,
+                        statusText: (error as any).statusText || 'No status text',
+                        response: (error as any).response || 'No response details',
+                        config: {
+                            url: (error as any).config?.url,
+                            method: (error as any).config?.method,
+                            headers: {
+                                ...(error as any).config?.headers,
+                                // Don't log auth headers
+                                Authorization: (error as any).config?.headers?.Authorization ? '***' : undefined
+                            }
+                        }
+                    });
+                    
+                    // Test database connection
+                    try {
+                        console.log(' Testing database connection...');
+                        const { data: testData, error: testError } = await supabase
+                            .from('profiles')
+                            .select('count')
+                            .limit(1);
+                            
+                        if (testError) {
+                            console.error(' Database connection test failed:', testError);
+                            throw new Error('Database connection issue. Please try again later.');
+                        }
+                        
+                        console.log(' Database connection test successful');
+                    } catch (testError) {
+                        console.error(' Database test error:', testError);
+                    }
+                    
+                    throw new Error('Unable to create user account. Please try again later.');
+                }
+                
+                throw error;
+            }
+
+            console.log('Auth user created:', { userId: data.user?.id });
+
+            // 2. If signup was successful but user is not confirmed yet
+            if (data.user && !data.user.identities?.length) {
+                console.log('User needs email verification');
+                return {
+                    success: true,
+                    message: 'A confirmation email has been sent. Please check your email to verify your account.',
+                    data: {
+                        ...data,
+                        requiresConfirmation: true
+                    }
+                };
+            }
+
+            // 3. Create user profile in the database
+            if (data.user) {
+                try {
+                    const profileData = {
+                        id: data.user.id,
+                        email: email.toLowerCase().trim(),
+                        full_name: name.trim(),
+                        role: 'user',
+                        created_at: new Date().toISOString(),
+                        updated_at: new Date().toISOString(),
+                    };
+                    
+                    console.log('Creating profile with data:', profileData);
+                    
+                    const { data: profile, error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert(profileData)
+                        .select()
+                        .single();
+
+                    if (profileError) {
+                        console.error('Profile creation error:', {
+                            message: profileError.message,
+                            details: profileError.details,
+                            hint: profileError.hint,
+                            code: profileError.code
+                        });
+                        
+                        // Try to delete the auth user if profile creation fails
+                        try {
+                            console.log('Attempting to clean up auth user due to profile creation failure...');
+                            const { error: deleteError } = await supabase.auth.admin.deleteUser(data.user.id);
+                            if (deleteError) {
+                                console.error('Failed to clean up auth user:', deleteError);
+                            } else {
+                                console.log('Successfully cleaned up auth user');
+                            }
+                        } catch (deleteError) {
+                            console.error('Error during auth user cleanup:', deleteError);
+                        }
+                        
+                        throw new Error(profileError.message || 'Failed to create user profile. Please try again.');
+                    }
+                    
+                    console.log('Profile created successfully:', profile);
+                    
+                    // Update the user state
+                    setUser({
+                        id: data.user.id,
+                        email: email.toLowerCase().trim(),
+                        name: name.trim(),
+                        role: 'user',
+                        created_at: profile.created_at,
+                        updated_at: profile.updated_at
+                    });
+                    
+                    return {
+                        success: true,
+                        message: 'Account created successfully!',
+                        data: {
+                            ...data,
+                            profile
+                        }
+                    };
+                    
+                } catch (profileError: any) {
+                    console.error('Error in profile creation:', {
+                        name: profileError.name,
+                        message: profileError.message,
+                        stack: profileError.stack
+                    });
+                    
+                    throw new Error(profileError.message || 'Failed to set up your account. Please try again.');
+                }
+            }
+            
+            // If we get here, something unexpected happened
+            throw new Error('An unexpected error occurred during signup');
+            
+        } catch (error: any) {
+            console.error('Signup process failed:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack,
+                cause: error.cause
+            });
+            
+            // Re-throw with a more user-friendly message if needed
+            if (!error.message.includes('already registered')) {
+                error.message = 'Failed to create account. ' + (error.message || 'Please try again.');
+            }
+            
+            throw error;
+            
+        } finally {
+            console.log('Signup process completed');
+            setIsLoading(false);
+        }
+    };
 
     const login = async (email: string, password: string) => {
         setIsLoading(true);
@@ -136,74 +392,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
     };
 
-    const signUp = async (email: string, password: string, name: string) => {
-        setIsLoading(true);
-        try {
-            // 1. First sign up the user with Supabase Auth
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: name,
-                    },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
-                },
-            });
-
-            if (error) {
-                // Handle specific error cases
-                if (error.message.includes('already registered')) {
-                    throw new Error('This email is already registered. Please sign in instead.');
-                }
-                throw error;
-            }
-
-            // 2. If signup was successful but user is not confirmed yet
-            if (data.user && !data.user.identities?.length) {
-                throw new Error('This email is already registered. Please sign in instead.');
-            }
-
-            // 3. Create user profile in the database
-            if (data.user) {
-                try {
-                    const { error: profileError } = await supabase
-                        .from('profiles')
-                        .upsert({
-                            id: data.user.id,
-                            email: email.toLowerCase(),
-                            full_name: name,
-                            role: 'user',
-                            updated_at: new Date().toISOString(),
-                        });
-
-                    if (profileError) throw profileError;
-                } catch (profileError) {
-                    console.error('Profile creation error:', profileError);
-                    // Don't fail the signup if profile creation fails - we can retry later
-                }
-            }
-
-            // 4. Return success response
-            return {
-                success: true,
-                message: 'Account created successfully! Please check your email to verify your account.',
-                data
-            };
-        } catch (error) {
-            console.error('Error signing up:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     const signInWithGoogle = async () => {
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `http://localhost:8080/auth/callback`,
                 },
             });
             if (error) throw error;
@@ -218,7 +412,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'github',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `http://localhost:8080/auth/callback`,
                 },
             });
             if (error) throw error;
@@ -234,7 +428,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
                 type: 'signup',
                 email,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `http://localhost:8080/auth/callback`,
                 },
             });
 
@@ -255,7 +449,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
     const resetPassword = async (email: string) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
+            redirectTo: `http://localhost:8080/reset-password`,
         });
         if (error) throw error;
     };
@@ -310,20 +504,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const isAdmin = () => {
         return user?.role === 'admin';
     };
-    const value = React.useMemo(() => ({
+
+    const value = {
         user,
         session,
+        isLoading,
         login,
         signUp,
-        resendVerification,
+        logout,
         signInWithGoogle,
         signInWithGitHub,
         resetPassword,
         updatePassword,
-        logout,
-        isLoading,
+        resendVerification,
         isAdmin,
-    }), [user, session, isLoading]);
+    };
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+};
+
+export { AuthProvider, useAuth };

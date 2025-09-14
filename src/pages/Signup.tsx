@@ -34,18 +34,24 @@ const Signup = () => {
         
         // Basic validation
         if (!email || !password || !name) {
-            setError('All fields are required');
+            const errorMsg = 'All fields are required';
+            console.error('Validation error:', errorMsg);
+            setError(errorMsg);
             return;
         }
         
         if (password.length < 6) {
-            setError('Password must be at least 6 characters');
+            const errorMsg = 'Password must be at least 6 characters';
+            console.error('Validation error:', errorMsg);
+            setError(errorMsg);
             return;
         }
         
         setIsLoading(true);
+        console.log('Starting signup process...', { email, name });
+        
         try {
-            console.log('Attempting to sign up...');
+            console.log('Calling signUp function...');
             const result = await signUp(email, password, name);
             console.log('Signup result:', result);
             
@@ -70,12 +76,29 @@ const Signup = () => {
                 }, 5000);
             } else {
                 const errorMessage = result?.message || 'Failed to create account';
-                console.error('Signup failed:', errorMessage);
+                console.error('Signup failed with result:', { result });
                 throw new Error(errorMessage);
             }
         } catch (err: any) {
-            console.error('Error in handleEmailSubmit:', err);
-            const errorMessage = err.message || 'Failed to create account. Please try again.';
+            console.error('Error in handleEmailSubmit:', {
+                name: err.name,
+                message: err.message,
+                stack: err.stack,
+                cause: err.cause,
+                response: err.response
+            });
+            
+            let errorMessage = 'Failed to create account. Please try again.';
+            
+            // Handle specific error cases
+            if (err.message.includes('already registered')) {
+                errorMessage = 'This email is already registered. Please sign in instead.';
+            } else if (err.message.includes('password')) {
+                errorMessage = 'Invalid password. Please try again with a stronger password.';
+            } else if (err.message.includes('email')) {
+                errorMessage = 'Invalid email address. Please check and try again.';
+            }
+            
             setError(errorMessage);
             toast({
                 title: 'Error',
@@ -83,6 +106,7 @@ const Signup = () => {
                 variant: 'destructive',
             });
         } finally {
+            console.log('Signup process completed');
             setIsLoading(false);
         }
     };
