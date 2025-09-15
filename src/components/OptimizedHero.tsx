@@ -39,15 +39,23 @@ const OptimizedHero = () => {
     return () => setIsMounted(false);
   }, []);
 
-  const goToNext = useCallback(() => {
-    if (!isMounted) return;
+  const goToSlide = useCallback((index: number) => {
+    if (!isMounted || isTransitioning) return;
     
     setIsTransitioning(true);
     setTimeout(() => {
-      setCurrentIndex((prev) => (prev + 1) % heroImages.length);
+      setCurrentIndex(index);
       setIsTransitioning(false);
-    }, 1000);
-  }, [isMounted]);
+    }, 300);
+  }, [isMounted, isTransitioning]);
+
+  const goToNext = useCallback(() => {
+    goToSlide((currentIndex + 1) % heroImages.length);
+  }, [currentIndex, goToSlide]);
+
+  const goToPrev = useCallback(() => {
+    goToSlide((currentIndex - 1 + heroImages.length) % heroImages.length);
+  }, [currentIndex, goToSlide]);
 
   // Auto-rotate every 10 seconds
   useEffect(() => {
@@ -74,7 +82,7 @@ const OptimizedHero = () => {
     <>
       <section 
         id="home" 
-        className="min-h-screen relative overflow-hidden"
+        className="min-h-screen relative overflow-hidden group"
         aria-label="Hero section with fashion showcase"
       >
         {/* Background images with transitions and lazy loading */}
@@ -84,7 +92,7 @@ const OptimizedHero = () => {
             alt={currentImage.alt}
             placeholderSrc={currentImage.placeholder}
             effect="opacity"
-            className={`w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
+            className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${
               isTransitioning ? 'opacity-0' : 'opacity-100'
             }`}
             wrapperClassName="w-full h-full"
@@ -92,18 +100,42 @@ const OptimizedHero = () => {
           <div className="absolute inset-0 bg-black/50"></div>
         </div>
 
-        <div className="absolute inset-0">
-          <LazyLoadImage
-            src={nextImage.src}
-            alt={nextImage.alt}
-            placeholderSrc={nextImage.placeholder}
-            effect="opacity"
-            className={`w-full h-full object-cover transition-opacity duration-1000 ease-in-out ${
-              isTransitioning ? 'opacity-100' : 'opacity-0'
-            }`}
-            wrapperClassName="w-full h-full"
-          />
-          <div className="absolute inset-0 bg-black/50"></div>
+        {/* Navigation Buttons */}
+        <button 
+          onClick={goToPrev}
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+          aria-label="Previous slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        
+        <button 
+          onClick={goToNext}
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-full bg-black/30 text-white hover:bg-black/50 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-secondary"
+          aria-label="Next slide"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+
+        {/* Dot Indicators */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex space-x-2">
+          {heroImages.map((_, index) => (
+            <button
+              key={index}
+              onClick={() => goToSlide(index)}
+              className={`w-3 h-3 rounded-full transition-all ${
+                index === currentIndex 
+                  ? 'w-6 bg-secondary' 
+                  : 'bg-white/50 hover:bg-white/75'
+              }`}
+              aria-label={`Go to slide ${index + 1}`}
+              aria-current={index === currentIndex ? 'true' : 'false'}
+            />
+          ))}
         </div>
 
         {/* Content */}
