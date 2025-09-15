@@ -57,14 +57,6 @@ const OptimizedHero = () => {
     goToSlide((currentIndex - 1 + heroImages.length) % heroImages.length);
   }, [currentIndex, goToSlide]);
 
-  // Auto-rotate every 10 seconds
-  useEffect(() => {
-    if (!isMounted) return;
-    
-    const interval = setInterval(goToNext, 10000);
-    return () => clearInterval(interval);
-  }, [goToNext, isMounted]);
-
   // Get current and next images
   const currentImage = heroImages[currentIndex];
   const nextImage = heroImages[(currentIndex + 1) % heroImages.length];
