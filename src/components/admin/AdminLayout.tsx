@@ -15,7 +15,8 @@ import {
   ChevronDown,
   User,
   Menu,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -27,6 +28,7 @@ const sidebarItems = [
   { name: 'Products', path: '/admin/products', icon: Package },
   { name: 'Orders', path: '/admin/orders', icon: ShoppingBag },
   { name: 'Customers', path: '/admin/users', icon: Users },
+  { name: 'Consultations', path: '/admin/consultations', icon: Calendar },
   { name: 'Analytics', path: '/admin/analytics', icon: BarChart2 },
   { name: 'Settings', path: '/admin/settings', icon: Settings },
 ];

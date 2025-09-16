@@ -34,6 +34,8 @@ const UsersPage = lazy(() => import("@/pages/admin/UsersPage"));
 const ProductsPage = lazy(() => import("@/pages/admin/ProductsPage"));
 const OrdersPage = lazy(() => import("@/pages/admin/OrdersPage"));
 const SettingsPage = lazy(() => import("@/pages/admin/SettingsPage"));
+const ConsultationsPage = lazy(() => import("@/pages/admin/ConsultationsPage"));
+const ConsultationDetailPage = lazy(() => import("@/pages/admin/ConsultationDetailPage"));
 
 const queryClient = new QueryClient();
 
@@ -94,12 +96,13 @@ const App = () => {
                                             </ProtectedRoute>
                                         }
                                     >
-                                        <Route index element={<Navigate to="dashboard" replace />} />
-                                        <Route path="dashboard" element={<AdminDashboard />} />
+                                        <Route index element={<AdminDashboard />} />
                                         <Route path="analytics" element={<AnalyticsPage />} />
                                         <Route path="users" element={<UsersPage />} />
                                         <Route path="products" element={<ProductsPage />} />
                                         <Route path="orders" element={<OrdersPage />} />
+                                        <Route path="consultations" element={<ConsultationsPage />} />
+                                        <Route path="consultations/:id" element={<ConsultationDetailPage />} />
                                         <Route path="settings" element={<SettingsPage />} />
                                     </Route>
                                     
