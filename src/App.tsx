@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
@@ -60,57 +61,59 @@ const App = () => {
             <TooltipProvider>
                 <AuthProvider>
                     <CartProvider>
-                        <Toaster />
-                        <Sonner />
-                        <BrowserRouter>
-                            <Suspense fallback={<LoadingSpinner />}>
-                                <Routes>
-                                    <Route path="/" element={<Index />} />
-                                    <Route path="/payment" element={<Payment />} />
-                                    <Route path="/login" element={<Login />} />
-                                    <Route path="/signup" element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <Signup />
-                                        </Suspense>
-                                    } />
-                                    <Route path="/auth/callback" element={
-                                        <Suspense fallback={<LoadingSpinner />}>
-                                            <Callback />
-                                        </Suspense>
-                                    } />
-                                    <Route path="/test-connection" element={<TestConnection />} />
-                                    <Route path="/cart" element={<Cart />} />
-                                    <Route path="/checkout" element={<CheckoutPage />} />
-                                    <Route path="/order-confirmation" element={<OrderConfirmation />} />
-                                    <Route path="/payment" element={<Payment />} />
-                                    <Route path="/dashboard" element={<Dashboard />} />
-                                    <Route path="/forgot-password" element={<ForgotPassword />} />
-                                    <Route path="/reset-password" element={<ResetPassword />} />
-                                    
-                                    {/* Admin Routes */}
-                                    <Route 
-                                        path="/admin" 
-                                        element={
-                                            <ProtectedRoute adminOnly>
-                                                <AdminLayout />
-                                            </ProtectedRoute>
-                                        }
-                                    >
-                                        <Route index element={<AdminDashboard />} />
-                                        <Route path="analytics" element={<AnalyticsPage />} />
-                                        <Route path="users" element={<UsersPage />} />
-                                        <Route path="products" element={<ProductsPage />} />
-                                        <Route path="orders" element={<OrdersPage />} />
-                                        <Route path="consultations" element={<ConsultationsPage />} />
-                                        <Route path="consultations/:id" element={<ConsultationDetailPage />} />
-                                        <Route path="settings" element={<SettingsPage />} />
-                                    </Route>
-                                    
-                                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                                    <Route path="*" element={<NotFound />} />
-                                </Routes>
-                            </Suspense>
-                        </BrowserRouter>
+                        <WishlistProvider>
+                            <Toaster />
+                            <Sonner />
+                            <BrowserRouter>
+                                <Suspense fallback={<LoadingSpinner />}>
+                                    <Routes>
+                                        <Route path="/" element={<Index />} />
+                                        <Route path="/payment" element={<Payment />} />
+                                        <Route path="/login" element={<Login />} />
+                                        <Route path="/signup" element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <Signup />
+                                            </Suspense>
+                                        } />
+                                        <Route path="/auth/callback" element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <Callback />
+                                            </Suspense>
+                                        } />
+                                        <Route path="/test-connection" element={<TestConnection />} />
+                                        <Route path="/cart" element={<Cart />} />
+                                        <Route path="/checkout" element={<CheckoutPage />} />
+                                        <Route path="/order-confirmation" element={<OrderConfirmation />} />
+                                        <Route path="/payment" element={<Payment />} />
+                                        <Route path="/dashboard" element={<Dashboard />} />
+                                        <Route path="/forgot-password" element={<ForgotPassword />} />
+                                        <Route path="/reset-password" element={<ResetPassword />} />
+                                        
+                                        {/* Admin Routes */}
+                                        <Route 
+                                            path="/admin" 
+                                            element={
+                                                <ProtectedRoute adminOnly>
+                                                    <AdminLayout />
+                                                </ProtectedRoute>
+                                            }
+                                        >
+                                            <Route index element={<AdminDashboard />} />
+                                            <Route path="analytics" element={<AnalyticsPage />} />
+                                            <Route path="users" element={<UsersPage />} />
+                                            <Route path="products" element={<ProductsPage />} />
+                                            <Route path="orders" element={<OrdersPage />} />
+                                            <Route path="consultations" element={<ConsultationsPage />} />
+                                            <Route path="consultations/:id" element={<ConsultationDetailPage />} />
+                                            <Route path="settings" element={<SettingsPage />} />
+                                        </Route>
+                                        
+                                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                                        <Route path="*" element={<NotFound />} />
+                                    </Routes>
+                                </Suspense>
+                            </BrowserRouter>
+                        </WishlistProvider>
                     </CartProvider>
                 </AuthProvider>
             </TooltipProvider>

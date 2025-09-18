@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/use-toast';
+import WishlistItems from '@/components/wishlist/WishlistItems';
 
 const Dashboard = () => {
     const { user, logout, isAdmin } = useAuth();
@@ -500,22 +501,17 @@ const Dashboard = () => {
                     <TabsContent value="wishlist">
                         <Card>
                             <CardHeader>
-                                <CardTitle>Wishlist</CardTitle>
-                                <CardDescription>
-                                    Your saved items will appear here.
-                                </CardDescription>
+                                <div className="flex justify-between items-center">
+                                    <div>
+                                        <CardTitle>Your Wishlist</CardTitle>
+                                        <CardDescription>
+                                            You have 0 items in your wishlist
+                                        </CardDescription>
+                                    </div>
+                                </div>
                             </CardHeader>
                             <CardContent>
-                                <div className="text-center py-12">
-                                    <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                                    <h3 className="text-lg font-medium">Your wishlist is empty</h3>
-                                    <p className="text-muted-foreground mt-2">
-                                        Save items you love for easy access later.
-                                    </p>
-                                    <Button className="mt-4" onClick={() => navigate('/shop')}>
-                                        Browse Products
-                                    </Button>
-                                </div>
+                                <WishlistItems />
                             </CardContent>
                         </Card>
                     </TabsContent>

@@ -3,7 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useState } from 'react';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useToast } from '@/hooks/use-toast';
+import { Heart } from 'lucide-react';
 
 // Import the images from assets
 import img1 from '@/assets/087d3fd9-dc65-4334-a6ae-a9fb1b9dc237.jpg';
@@ -134,9 +136,39 @@ import traditional15 from '@/assets/Traditional  (15).jpg';
 
 const Portfolio = () => {
     const { addItem } = useCart();
+    const { addToWishlist, isInWishlist, removeFromWishlist } = useWishlist();
     const { toast } = useToast();
     const [activeCategory, setActiveCategory] = useState('All');
-    
+
+    const handleAddToCart = (item: any) => {
+        addItem({
+            id: item.id.toString(),
+            name: item.title,
+            price: item.price,
+            image: item.image,
+        });
+        toast({
+            title: "Added to Cart",
+            description: `${item.title} has been added to your cart.`,
+        });
+    };
+
+    const handleWishlistToggle = (item: any) => {
+        const wishlistItem = {
+            id: item.id.toString(),
+            name: item.title,
+            price: item.price,
+            image: item.image,
+            category: item.category
+        };
+
+        if (isInWishlist(item.id)) {
+            removeFromWishlist(item.id);
+        } else {
+            addToWishlist(wishlistItem);
+        }
+    };
+
     const portfolioItems = [
         {
             id: 2,
@@ -238,23 +270,6 @@ const Portfolio = () => {
         { id: 'casual-14', title: 'Casual Outfit 14', image: casual14, category: 'Casual', description: 'Elegant casual style', tags: ['Casual', 'Elegant'], price: 599.99 },
     ];
 
-    const handleAddToCart = (item: any) => {
-        addItem({
-            id: item.id.toString(),
-            name: item.title,
-            price: item.price,
-            image: item.image,
-        });
-        toast({
-            title: "Added to Cart",
-            description: `${item.title} has been added to your cart.`,
-        });
-    };
-
-    // Get unique categories from portfolio items
-    const categories = ["All", ...new Set(portfolioItems.map(item => item.category))];
-    
-    // Define contemporary items array
     const contemporaryItems = [
         { id: 'contemporary-1', title: 'Contemporary Outfit 1', image: contemporary1, category: 'Contemporary', description: 'Modern and stylish contemporary wear', tags: ['Contemporary', 'Modern'], price: 599.99 },
         { id: 'contemporary-2', title: 'Contemporary Outfit 2', image: contemporary2, category: 'Contemporary', description: 'Chic contemporary fashion', tags: ['Contemporary', 'Chic'], price: 649.99 },
@@ -275,7 +290,6 @@ const Portfolio = () => {
         { id: 'contemporary-17', title: 'Contemporary Outfit 17', image: contemporary17, category: 'Contemporary', description: 'Modern contemporary fashion', tags: ['Contemporary', 'Modern'], price: 759.99 },
     ];
 
-    // Define formal items array
     const formalItems = [
         { id: 'formal-1', title: 'Formal Suit 1', image: formal1, category: 'Formal', description: 'Elegant formal suit for special occasions', tags: ['Formal', 'Elegant'], price: 1299.99 },
         { id: 'formal-2', title: 'Formal Suit 2', image: formal2, category: 'Formal', description: 'Classic business formal wear', tags: ['Formal', 'Business'], price: 1399.99 },
@@ -289,7 +303,6 @@ const Portfolio = () => {
         { id: 'formal-10', title: 'Formal Suit 10', image: formal10, category: 'Formal', description: 'Premium business formal', tags: ['Formal', 'Business'], price: 1699.99 },
     ];
 
-    // Define luxury items array
     const luxuryItems = [
         { id: 'luxury-1', title: 'Luxury Gown 1', image: luxury1, category: 'Luxury', description: 'Exclusive designer evening gown', tags: ['Luxury', 'Designer', 'Evening'], price: 2499.99 },
         { id: 'luxury-2', title: 'Luxury Gown 2', image: luxury2, category: 'Luxury', description: 'Handcrafted couture masterpiece', tags: ['Luxury', 'Couture', 'Handmade'], price: 2899.99 },
@@ -308,7 +321,6 @@ const Portfolio = () => {
         { id: 'luxury-15', title: 'Luxury Gown 15', image: luxury15, category: 'Luxury', description: 'Exclusive designer collection', tags: ['Luxury', 'Exclusive', 'Designer'], price: 3699.99 },
     ];
 
-    // Define party items array
     const partyItems = [
         { id: 'party-1', title: 'Party Dress 1', image: party1, category: 'Party', description: 'Sparkling sequin party dress', tags: ['Party', 'Sequin', 'Sparkle'], price: 899.99 },
         { id: 'party-2', title: 'Party Dress 2', image: party2, category: 'Party', description: 'Flirty bodycon party dress', tags: ['Party', 'Bodycon', 'Sexy'], price: 799.99 },
@@ -327,7 +339,6 @@ const Portfolio = () => {
         { id: 'party-15', title: 'Party Dress 15', image: party15, category: 'Party', description: 'One-shoulder party dress', tags: ['Party', 'One-Shoulder', 'Elegant'], price: 919.99 },
     ];
 
-    // Define professional items array
     const professionalItems = [
         { id: 'professional-1', title: 'Professional Suit 1', image: professional1, category: 'Professional', description: 'Classic business suit for the office', tags: ['Professional', 'Business', 'Office'], price: 1299.99 },
         { id: 'professional-2', title: 'Professional Suit 2', image: professional2, category: 'Professional', description: 'Tailored blazer and pants set', tags: ['Professional', 'Tailored', 'Chic'], price: 1199.99 },
@@ -346,7 +357,6 @@ const Portfolio = () => {
         { id: 'professional-15', title: 'Professional Suit 15', image: professional15, category: 'Professional', description: 'Executive business suit', tags: ['Professional', 'Executive', 'Business'], price: 1499.99 },
     ];
 
-    // Define traditional items array
     const traditionalItems = [
         { id: 'traditional-1', title: 'Traditional Outfit 1', image: traditional1, category: 'Traditional', description: 'Elegant traditional attire', tags: ['Traditional', 'Cultural'], price: 1599.99 },
         { id: 'traditional-2', title: 'Traditional Outfit 2', image: traditional2, category: 'Traditional', description: 'Classic cultural dress', tags: ['Traditional', 'Heritage'], price: 1499.99 },
@@ -365,9 +375,12 @@ const Portfolio = () => {
         { id: 'traditional-15', title: 'Traditional Outfit 15', image: traditional15, category: 'Traditional', description: 'Elegant ethnic ensemble', tags: ['Traditional', 'Elegant'], price: 1899.99 },
     ];
 
+    // Get unique categories from portfolio items
+    const categories = ["All", ...new Set(portfolioItems.map(item => item.category))];
+
     // Filter items based on active category
-    const filteredItems = activeCategory === 'All' 
-        ? portfolioItems 
+    const filteredItems = activeCategory === 'All'
+        ? portfolioItems
         : activeCategory === 'Casual'
             ? casualItems
             : activeCategory === 'Contemporary'
@@ -422,17 +435,29 @@ const Portfolio = () => {
                                     alt={item.title}
                                     className="w-full h-full object-cover group-hover:opacity-90 transition-opacity"
                                 />
-                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 p-2">
-                                    <Button 
-                                        variant="default" 
-                                        size="xs"
-                                        className="h-7 text-xs px-2"
+                                <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-3">
+                                    <Button
+                                        variant="default"
+                                        size="sm"
+                                        className="w-full max-w-[120px] h-8 text-xs"
                                         onClick={(e) => {
                                             e.stopPropagation();
                                             handleAddToCart(item);
                                         }}
                                     >
-                                        Quick Add
+                                        Add to Cart
+                                    </Button>
+                                    <Button
+                                        variant={isInWishlist(item.id) ? "secondary" : "outline"}
+                                        size="sm"
+                                        className="w-full max-w-[120px] h-8 text-xs gap-1"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleWishlistToggle(item);
+                                        }}
+                                    >
+                                        <Heart className="h-3.5 w-3.5" fill={isInWishlist(item.id) ? "currentColor" : "none"} />
+                                        {isInWishlist(item.id) ? 'Wishlisted' : 'Wishlist'}
                                     </Button>
                                 </div>
                                 <Badge className="absolute top-2 left-2 text-[10px] h-5 px-1.5 bg-white text-foreground hover:bg-white/90">
