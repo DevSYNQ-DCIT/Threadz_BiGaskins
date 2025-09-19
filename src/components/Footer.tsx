@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Mail, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/use-toast';
 
 // Import SVG files
 import FacebookIcon from '@/assets/facebook.svg';
@@ -10,6 +11,7 @@ import TiktokIcon from '@/assets/tiktok.svg';
 import WhatsappIcon from '@/assets/whatsapp.svg';
 
 const Footer = () => {
+    const { toast } = useToast();
     const [isConsultationOpen, setIsConsultationOpen] = useState(false);
     const [formData, setFormData] = useState({
         name: '',
@@ -29,10 +31,20 @@ const Footer = () => {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        
         // Here you would typically send the form data to your backend
         console.log('Form submitted:', formData);
+        
+        // Show success toast
+        toast({
+            title: "Consultation Requested!",
+            description: "We've received your request and will contact you shortly.",
+            duration: 5000,
+        });
+        
         // Close the modal after submission
         setIsConsultationOpen(false);
+        
         // Reset form
         setFormData({
             name: '',
@@ -41,8 +53,6 @@ const Footer = () => {
             service: '',
             message: ''
         });
-        // Show success message (you can replace this with a toast notification)
-        alert('Thank you for your consultation request! We will contact you soon.');
     };
 
     const socialLinks = [
