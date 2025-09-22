@@ -8,20 +8,47 @@ type ConsultationUpdate = Database['public']['Tables']['consultations']['Update'
 export const consultationsService = {
   // Fetch all consultations with user details
   getConsultations: async (): Promise<(Consultation & { user: { full_name: string, email: string } | null })[]> => {
-    const { data, error } = await supabase
+    // First get all consultations
+    const { data: consultations, error: consultationsError } = await supabase
       .from('consultations')
-      .select(`
-        *,
-        user:user_id (id, full_name, email)
-      `)
+      .select('*')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Error fetching consultations:', error);
-      throw error;
+    if (consultationsError) {
+      console.error('Error fetching consultations:', consultationsError);
+      throw consultationsError;
     }
 
-    return data || [];
+    if (!consultations || consultations.length === 0) return [];
+
+    // Then get all user IDs to fetch in a single query
+    const userIds = consultations
+      .map(c => c.user_id)
+      .filter((id, index, self) => id && self.indexOf(id) === index);
+
+    // Fetch all users in a single query
+    const { data: users, error: usersError } = await supabase
+      .from('users')
+      .select('id, full_name, email')
+      .in('id', userIds);
+
+    if (usersError) {
+      console.error('Error fetching users:', usersError);
+      // Don't throw, just return consultations without user data
+      return consultations.map(consultation => ({
+        ...consultation,
+        user: null
+      }));
+    }
+
+    // Create a map of user ID to user data for quick lookup
+    const userMap = new Map(users?.map(user => [user.id, user]) || []);
+
+    // Combine the data
+    return consultations.map(consultation => ({
+      ...consultation,
+      user: userMap.get(consultation.user_id) || null
+    }));
   },
 
   // Get a single consultation by ID with user details
