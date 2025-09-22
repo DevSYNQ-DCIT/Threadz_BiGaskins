@@ -10,21 +10,17 @@ import hero2 from '@/assets/hero-2.jpg';
 import hero3 from '@/assets/hero-3.jpg';
 import hero4 from '@/assets/hero-4.jpg';
 
-// Import placeholder for lazy loading
-import placeholder from '@/assets/placeholder.svg';
-
 // Define the type for our hero images
 interface HeroImage {
   src: string;
   alt: string;
-  placeholder: string;
 }
 
 const heroImages: HeroImage[] = [
-  { src: heroFashion, alt: 'Luxury fashion design', placeholder },
-  { src: hero2, alt: 'Elegant clothing collection', placeholder },
-  { src: hero3, alt: 'Bespoke tailoring', placeholder },
-  { src: hero4, alt: 'High-end fashion', placeholder },
+  { src: heroFashion, alt: 'Luxury fashion design' },
+  { src: hero2, alt: 'Elegant clothing collection' },
+  { src: hero3, alt: 'Bespoke tailoring' },
+  { src: hero4, alt: 'High-end fashion' },
 ];
 
 const OptimizedHero = () => {
@@ -82,7 +78,6 @@ const OptimizedHero = () => {
           <LazyLoadImage
             src={currentImage.src}
             alt={currentImage.alt}
-            placeholderSrc={currentImage.placeholder}
             effect="opacity"
             className={`w-full h-full object-cover transition-opacity duration-300 ease-in-out ${
               isTransitioning ? 'opacity-0' : 'opacity-100'

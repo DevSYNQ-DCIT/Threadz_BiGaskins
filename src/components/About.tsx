@@ -80,9 +80,6 @@ const About = () => {
                                 src={designPortfolio}
                                 alt="Luxury fashion design studio with mannequins and elegant dresses"
                                 className="w-full h-[600px] object-cover object-center"
-                                onError={(e) => {
-                                    e.currentTarget.src = "/placeholder.svg"; // Fallback
-                                }}
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none"></div>
                         </div>
