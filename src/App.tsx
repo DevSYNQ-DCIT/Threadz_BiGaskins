@@ -9,6 +9,7 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useEffect, useState, lazy, Suspense } from "react";
 import { ProtectedRoute } from "@/components/admin/ProtectedRoute";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 // Layouts
 const AdminLayout = lazy(() => import("@/components/admin/AdminLayout"));
@@ -58,8 +59,9 @@ const App = () => {
 
     return (
         <QueryClientProvider client={queryClient}>
-            <TooltipProvider>
-                <AuthProvider>
+            <ThemeProvider>
+                <TooltipProvider>
+                    <AuthProvider>
                     <CartProvider>
                         <WishlistProvider>
                             <Toaster />
@@ -115,8 +117,9 @@ const App = () => {
                             </BrowserRouter>
                         </WishlistProvider>
                     </CartProvider>
-                </AuthProvider>
-            </TooltipProvider>
+                    </AuthProvider>
+                </TooltipProvider>
+            </ThemeProvider>
         </QueryClientProvider>
     );
 };

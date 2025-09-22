@@ -73,7 +73,7 @@ const Footer = () => {
         },
         { 
             icon: <img src={WhatsappIcon} alt="WhatsApp" className="w-5 h-5" />, 
-            href: "#", 
+            href: "https://wa.me/qr/Y7FNSXBVUYIGC1", 
             label: "WhatsApp" 
         },
     ];

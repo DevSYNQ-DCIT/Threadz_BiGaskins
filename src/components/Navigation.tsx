@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X, ShoppingCart, LayoutDashboard } from 'lucide-react';
+import ThemeToggle from './ThemeToggle';
 import { UserAvatar } from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -45,7 +46,8 @@ const Navigation = () => {
                     </div>
 
                     {/* CTA Button & User Actions */}
-                    <div className="hidden md:flex items-center space-x-4">
+                    <div className="hidden md:flex items-center space-x-2">
+                        <ThemeToggle />
                         <Link to="/cart" className="relative">
                             <Button variant="ghost" size="sm">
                                 <ShoppingCart className="w-4 h-4" />
@@ -108,12 +110,16 @@ const Navigation = () => {
                                 </a>
                             ))}
                             <div className="flex flex-col space-y-3">
-                                <Link to="/cart" className="relative">
-                                    <Button variant="ghost" size="sm" className="w-full justify-start">
-                                        <ShoppingCart className="w-4 h-4 mr-2" />
-                                        Cart ({itemCount})
-                                    </Button>
-                                </Link>
+                                <div className="px-4 py-2 flex items-center space-x-2">
+                                    <ThemeToggle />
+                                    <Link to="/cart" className="relative flex items-center">
+                                        <Button variant="ghost" size="sm" className="justify-start">
+                                            <ShoppingCart className="w-4 h-4 mr-2" />
+                                            Cart ({itemCount})
+                                        </Button>
+                                    </Link>
+                                </div>
+                                
                                 {user ? (
                                     <>
                                         {user.role === 'admin' && (
