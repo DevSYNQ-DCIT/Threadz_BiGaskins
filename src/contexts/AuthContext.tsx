@@ -421,8 +421,9 @@ function AuthProvider({ children }: { children: ReactNode }) {
         }
     };
 
-    const isAdmin = () => {
-        return user?.role === 'admin';
+    const isAdmin = (): boolean => {
+        // Check if user exists and has admin role
+        return !!user && user.role === 'admin';
     };
 
     const value = {
