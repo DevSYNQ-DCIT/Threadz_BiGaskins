@@ -48,10 +48,10 @@ interface AuthContextType {
 }
 
 // Create the context with a default value
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Custom hook to use the auth context
-const useAuth = (): AuthContextType => {
+export const useAuth = (): AuthContextType => {
     const context = useContext(AuthContext);
     if (!context) {
         throw new Error('useAuth must be used within an AuthProvider');
@@ -60,7 +60,7 @@ const useAuth = (): AuthContextType => {
 };
 
 // AuthProvider component
-const AuthProvider = ({ children }: { children: ReactNode }) => {
+function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [isLoading, setIsLoading] = useState(true);
@@ -163,198 +163,116 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     // Auth methods will be implemented here
     const signUp = async (email: string, password: string, name: string): Promise<SignUpResponse> => {
         setIsLoading(true);
-        console.log('Starting signup process...', { email, name });
+        const normalizedEmail = email.toLowerCase().trim();
+        const normalizedName = name.trim();
+        
+        console.log('Starting signup process...', { email: normalizedEmail, name: normalizedName });
+        
+        // We'll store the user ID to use for profile creation
+        let userId: string | null = null;
         
         try {
             // 1. First sign up the user with Supabase Auth
             console.log('Attempting to create auth user...');
             
-            // Log environment variables (without sensitive data)
-            console.log('Supabase URL:', 
-                import.meta.env.VITE_SUPABASE_URL 
-                    ? `${import.meta.env.VITE_SUPABASE_URL.substring(0, 20)}...` 
-                    : 'Not set');
-
-            const signUpPayload = {
-                email: email.toLowerCase().trim(),
+            const { data: authData, error: authError } = await supabase.auth.signUp({
+                email: normalizedEmail,
                 password: password.trim(),
                 options: {
                     data: {
-                        full_name: name.trim(),
-                        email: email.toLowerCase().trim(),
+                        full_name: normalizedName,
+                        email: normalizedEmail
                     },
-                    emailRedirectTo: `http://localhost:8080/auth/callback`,
+                    emailRedirectTo: `${window.location.origin}/auth/callback`,
                 },
-            };
-            
-            console.log('Signup payload (sanitized):', {
-                ...signUpPayload,
-                password: '***', // Don't log actual password
-                options: {
-                    ...signUpPayload.options,
-                    data: {
-                        ...signUpPayload.options.data,
-                        email: signUpPayload.options.data.email ? '***@***' : 'missing'
-                    }
-                }
             });
 
-            // Make the signup request
-            const { data, error } = await supabase.auth.signUp(signUpPayload);
-
-            if (error) {
-                console.error(' Auth signup error:', {
-                    name: error.name,
-                    message: error.message,
-                    status: error.status,
-                    cause: error.cause,
-                    stack: error.stack,
-                    // Include additional error details if available
-                    ...(error as any).response?.data && { responseData: (error as any).response.data },
-                    ...(error as any).response?.statusText && { statusText: (error as any).response.statusText }
-                });
-
-                // Handle specific error cases
-                if (error.message.includes('already registered')) {
-                    throw new Error('This email is already registered. Please sign in instead.');
-                } else if (error.message.includes('password')) {
-                    throw new Error('Invalid password. Please use a stronger password.');
-                } else if (error.message.includes('email')) {
-                    throw new Error('Invalid email address. Please check and try again.');
-                } else if (error.status === 500) {
-                    console.error(' 500 Error Details:', {
-                        status: error.status,
-                        statusText: (error as any).statusText || 'No status text',
-                        response: (error as any).response || 'No response details',
-                        config: {
-                            url: (error as any).config?.url,
-                            method: (error as any).config?.method,
-                            headers: {
-                                ...(error as any).config?.headers,
-                                // Don't log auth headers
-                                Authorization: (error as any).config?.headers?.Authorization ? '***' : undefined
-                            }
-                        }
-                    });
-                    
-                    // Test database connection
-                    try {
-                        console.log(' Testing database connection...');
-                        const { data: testData, error: testError } = await supabase
-                            .from('profiles')
-                            .select('count')
-                            .limit(1);
-                            
-                        if (testError) {
-                            console.error(' Database connection test failed:', testError);
-                            throw new Error('Database connection issue. Please try again later.');
-                        }
-                        
-                        console.log(' Database connection test successful');
-                    } catch (testError) {
-                        console.error(' Database test error:', testError);
-                    }
-                    
-                    throw new Error('Unable to create user account. Please try again later.');
-                }
-                
-                throw error;
+            if (authError) {
+                console.error('Auth error:', authError);
+                throw new Error(authError.message || 'Failed to create user account');
             }
 
-            console.log('Auth user created:', { userId: data.user?.id });
+            // Store the user ID for profile creation
+            if (authData.user) {
+                userId = authData.user.id;
+                
+                // Prepare profile data
+                const profileData = {
+                    id: userId,
+                    email: normalizedEmail,
+                    full_name: normalizedName,
+                    role: 'customer',
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                };
+                
+                console.log('Creating/updating profile with data:', profileData);
+                
+                try {
+                    // Try with the current session first
+                    const { data: profileDataResult, error: profileError } = await supabase
+                        .from('profiles')
+                        .upsert(profileData)
+                        .select()
+                        .single();
+                    
+                    if (profileError) {
+                        console.warn('First profile creation attempt failed, trying with service role key...', profileError);
+                        
+                        // If first attempt fails, try with service role key (bypasses RLS)
+                        const { data: serviceProfileData, error: serviceError } = await fetch('/api/create-profile', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                userId,
+                                email: normalizedEmail,
+                                name: normalizedName
+                            }),
+                        }).then(res => res.json());
+                        
+                        if (serviceError) {
+                            console.error('Service role profile creation failed:', serviceError);
+                            throw new Error(`Failed to create user profile: ${serviceError.message}`);
+                        }
+                        
+                        console.log('Profile created using service role key');
+                    } else {
+                        console.log('Profile created/updated successfully', profileDataResult);
+                    }
+                } catch (profileError: any) {
+                    console.error('Profile creation error:', profileError);
+                    
+                    // Don't delete the auth user if profile creation fails
+                    // The user can complete profile setup after email verification
+                    console.warn('Profile creation failed, but auth user was created. User can complete setup after email verification.');
+                    
+                    // Still continue with the signup process since the auth user was created
+                    // The profile can be created when the user verifies their email
+                }
+            }
 
-            // 2. If signup was successful but user is not confirmed yet
-            if (data.user && !data.user.identities?.length) {
+            // 3. If signup was successful but user is not confirmed yet
+            if (authData.user && !authData.user.identities?.length) {
                 console.log('User needs email verification');
                 return {
                     success: true,
                     message: 'A confirmation email has been sent. Please check your email to verify your account.',
                     data: {
-                        ...data,
+                        ...authData,
                         requiresConfirmation: true
                     }
                 };
             }
 
-            // 3. Create user profile in the database
-            if (data.user) {
-                try {
-                    const profileData = {
-                        id: data.user.id,
-                        email: email.toLowerCase().trim(),
-                        full_name: name.trim(),
-                        role: 'user',
-                        created_at: new Date().toISOString(),
-                        updated_at: new Date().toISOString(),
-                    };
-                    
-                    console.log('Creating profile with data:', profileData);
-                    
-                    const { data: profile, error: profileError } = await supabase
-                        .from('profiles')
-                        .upsert(profileData)
-                        .select()
-                        .single();
+            // 4. If we get here, signup was successful
+            return {
+                success: true,
+                message: 'Account created successfully!',
+                data: authData
+            };
 
-                    if (profileError) {
-                        console.error('Profile creation error:', {
-                            message: profileError.message,
-                            details: profileError.details,
-                            hint: profileError.hint,
-                            code: profileError.code
-                        });
-                        
-                        // Try to delete the auth user if profile creation fails
-                        try {
-                            console.log('Attempting to clean up auth user due to profile creation failure...');
-                            const { error: deleteError } = await supabase.auth.admin.deleteUser(data.user.id);
-                            if (deleteError) {
-                                console.error('Failed to clean up auth user:', deleteError);
-                            } else {
-                                console.log('Successfully cleaned up auth user');
-                            }
-                        } catch (deleteError) {
-                            console.error('Error during auth user cleanup:', deleteError);
-                        }
-                        
-                        throw new Error(profileError.message || 'Failed to create user profile. Please try again.');
-                    }
-                    
-                    console.log('Profile created successfully:', profile);
-                    
-                    // Update the user state
-                    setUser({
-                        id: data.user.id,
-                        email: email.toLowerCase().trim(),
-                        name: name.trim(),
-                        role: 'user',
-                        created_at: profile.created_at,
-                        updated_at: profile.updated_at
-                    });
-                    
-                    return {
-                        success: true,
-                        message: 'Account created successfully!',
-                        data: {
-                            ...data,
-                            profile
-                        }
-                    };
-                    
-                } catch (profileError: any) {
-                    console.error('Error in profile creation:', {
-                        name: profileError.name,
-                        message: profileError.message,
-                        stack: profileError.stack
-                    });
-                    
-                    throw new Error(profileError.message || 'Failed to set up your account. Please try again.');
-                }
-            }
-            
-            // If we get here, something unexpected happened
-            throw new Error('An unexpected error occurred during signup');
-            
         } catch (error: any) {
             console.error('Signup process failed:', {
                 name: error.name,
@@ -523,4 +441,4 @@ const AuthProvider = ({ children }: { children: ReactNode }) => {
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export { AuthProvider, useAuth };
+export { AuthProvider };

@@ -18,7 +18,7 @@ interface WishlistContextType {
   clearWishlist: () => void;
 }
 
-const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
+export const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   const { user } = useAuth();
@@ -108,10 +108,10 @@ export const WishlistProvider = ({ children }: { children: ReactNode }) => {
   );
 };
 
-export const useWishlist = (): WishlistContextType => {
+export function useWishlist(): WishlistContextType {
   const context = useContext(WishlistContext);
   if (context === undefined) {
     throw new Error('useWishlist must be used within a WishlistProvider');
   }
   return context;
-};
+}
