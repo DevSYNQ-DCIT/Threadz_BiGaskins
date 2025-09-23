@@ -183,7 +183,8 @@ function AuthProvider({ children }: { children: ReactNode }) {
                         full_name: normalizedName,
                         email: normalizedEmail
                     },
-                    emailRedirectTo: `${window.location.origin}/auth/callback`,
+                    emailRedirectTo: `http://localhost:8080/auth/callback`,
+                    emailConfirm: true
                 },
             });
 
@@ -368,6 +369,7 @@ function AuthProvider({ children }: { children: ReactNode }) {
     const resetPassword = async (email: string) => {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: `http://localhost:8080/reset-password`,
+            skipBrowserRedirect: true,
         });
         if (error) throw error;
     };
