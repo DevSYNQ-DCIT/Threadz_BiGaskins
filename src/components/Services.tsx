@@ -146,12 +146,6 @@ const Services = () => {
                         </Card>
                     ))}
                 </div>
-
-                <div className="text-center mt-16">
-                    <Button variant="luxury" size="lg">
-                        Schedule Your Consultation
-                    </Button>
-                </div>
             </div>
 
             {/* Service Details Dialog */}

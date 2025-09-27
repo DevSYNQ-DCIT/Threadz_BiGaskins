@@ -484,11 +484,6 @@ const Portfolio = () => {
                     ))}
                 </div>
 
-                <div className="text-center mt-16">
-                    <Button variant="elegant" size="lg">
-                        View Complete Portfolio
-                    </Button>
-                </div>
             </div>
         </section>
     );

@@ -119,12 +119,9 @@ const Contact = () => {
                                     />
                                 </div>
 
-                                <div className="flex flex-col sm:flex-row gap-4">
-                                    <Button variant="luxury" size="lg" className="flex-1">
+                                <div className="flex justify-center">
+                                    <Button variant="luxury" size="lg" className="w-full sm:w-auto px-8">
                                         Schedule Consultation
-                                    </Button>
-                                    <Button variant="elegant" size="lg" className="flex-1">
-                                        Request Quote
                                     </Button>
                                 </div>
                             </CardContent>
