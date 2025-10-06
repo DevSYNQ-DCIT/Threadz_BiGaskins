@@ -16,7 +16,8 @@ import {
   User,
   Menu,
   X,
-  Calendar
+  Calendar,
+  Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -172,7 +173,15 @@ export const AdminLayout = () => {
                   </li>
                 ))}
               </ul>
-              <div className="mt-auto pt-4 border-t">
+              <div className="mt-auto pt-4 border-t space-y-2">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => navigate('/')}
+                >
+                  <Home className="mr-3 h-5 w-5" />
+                  Back Home
+                </Button>
                 <Button
                   variant="ghost"
                   className="w-full justify-start"

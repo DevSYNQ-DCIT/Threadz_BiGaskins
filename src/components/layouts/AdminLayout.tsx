@@ -51,6 +51,12 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
             
             <div className="border-t border-gray-700 my-4"></div>
             
+            <Link href="/" passHref>
+              <div className="flex items-center px-4 py-3 text-sm font-medium rounded-md cursor-pointer text-gray-300 hover:bg-gray-700 hover:text-white">
+                <span className="ml-3">Back Home</span>
+              </div>
+            </Link>
+            
             <button
               onClick={() => {
                 logout();
