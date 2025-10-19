@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, ShoppingCart, LayoutDashboard } from 'lucide-react';
+import { Menu, X, ShoppingCart, LayoutDashboard, User } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 import { UserAvatar } from './UserAvatar';
 import { useAuth } from '@/contexts/AuthContext';
